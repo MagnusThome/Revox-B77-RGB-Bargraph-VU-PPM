@@ -19,7 +19,7 @@
 #define BUTTONGPIO      8
 
 #define INMAX           4096
-#define INZERODB        750
+#define INZERODB        775
 #define PPMNOISE        20    // ADC PPM noise floor   
 
 #define NUM_LEDS        36
