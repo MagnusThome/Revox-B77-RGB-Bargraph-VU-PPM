@@ -138,14 +138,12 @@ void setup() {
 
 void loop() {
   unsigned long loopnow = millis();
-  
   sampleAudio();
   actualSampleRate++;
- 
+
   static unsigned long timer2;
   if (loopnow - timer2 >= 1000/PRINTFREQ ) {   // PRINTFREQ
     timer2 = loopnow;
-
     refreshPPM();
     refreshRMS();
     vuBallistics();
