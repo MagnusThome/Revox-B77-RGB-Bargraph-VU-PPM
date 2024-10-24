@@ -142,7 +142,6 @@ void loop() {
   
   sampleAudio();
   actualSampleRate++;
-
  
   static unsigned long timer2;
   if (loopnow - timer2 >= 1000/PRINTFREQ ) {   // PRINTFREQ
