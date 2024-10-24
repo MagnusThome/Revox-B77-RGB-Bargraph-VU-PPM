@@ -1,7 +1,6 @@
 #include <FastLED.h>
 #include <ADCInput.h>
 #include "RunningMedian.h"
-#include "RunningAverage.h"
 #include "TrueRMS.h"
 
 //#define DEBUG
