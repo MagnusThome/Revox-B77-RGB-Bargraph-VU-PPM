@@ -5,17 +5,14 @@
 
 //#define DEBUG
 
-#define LEDBARGPIO_L    14
-#define POSINPUTGPIO_L  27
-#define NEGINPUTGPIO_L  26
+#define INPUTGPIO_L     27
+#define INPUTGPIO_R     28
 #define OVRINPUTGPIO_L  2
-
-#define LEDBARGPIO_R    15
-#define POSINPUTGPIO_R  28
-#define NEGINPUTGPIO_R  29
 #define OVRINPUTGPIO_R  3
-
 #define BUTTONGPIO      8
+
+#define LEDBARGPIO_L    14
+#define LEDBARGPIO_R    15
 
 #define INMAX           4096
 #define INZERODB        775
@@ -46,7 +43,7 @@ CRGB ledRMS[NUM_LEDS];
 #define BIASBUF      255
 #define PPMFILTERBUF 10
 
-ADCInput adc(POSINPUTGPIO_L,POSINPUTGPIO_R);
+ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
 Rms2 readRmsR; 
 RunningMedian adcDcBiasL = RunningMedian(BIASBUF);
@@ -320,8 +317,6 @@ void updateLeds(void) {
 }
 
 
-
-
 // CREATE DIFFERENT COLOR SETUPS
 void setcolors(int set) {  
 
@@ -367,4 +362,4 @@ void setcolors(int set) {
 
 
 
-// -------------
+// ------------- the end --------------
