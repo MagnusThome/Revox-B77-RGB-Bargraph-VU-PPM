@@ -109,7 +109,7 @@ float thresholds[NUM_LEDS+1] = {
 void setup() {
   delay(500);
 #ifdef DEBUG
-  begin(115200);
+  Serial.begin(115200);
   delay(500);
   Serial.println("Boot VU meter");
 #endif
