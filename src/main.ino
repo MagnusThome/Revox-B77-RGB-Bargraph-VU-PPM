@@ -5,7 +5,7 @@
 #include "RunningMedian.h"
 #include "TrueRMS.h"
 
-//#define DEBUG
+#define DEBUG
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
@@ -64,6 +64,7 @@ int vuL,   vuR;
 #define BUTTONGPIO 8
 #define LONG_PRESS 1000
 Button myBtn(BUTTONGPIO);
+int programmode = 0;
 
 int actualSampleRate;
 
@@ -145,6 +146,11 @@ void loop() {
   unsigned long loopnow = millis();
   sampleAudio();
   actualSampleRate++;
+
+  while(programmode==2) {
+    testleds();
+    checkbutton();
+  }
 
   // UPDATE LEDS
   static unsigned long timer1;
@@ -280,8 +286,6 @@ void updateLeds(void) {
   vuDotR--;   // from -1 (nothing) to 35
 
 
-  int maxdisplaymodes = 5;
-  if (displaymode>=maxdisplaymodes) { displaymode = 0; }
      
   for(int pos=0; pos<NUMLEDS; pos++) { 
 
@@ -323,7 +327,9 @@ void updateLeds(void) {
         if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
         if (ppmDotR == pos) { ledR[pos] = ledDOT[pos]; }
         break;
-      
+
+      default:
+        displaymode = 0;
     }
   
   }
@@ -336,9 +342,6 @@ void updateLeds(void) {
 
 // CREATE DIFFERENT COLOR SETUPS
 void setcolors(void) {  
-
-  int maxcolormodes = 7;
-  if (colormode>=maxcolormodes) { colormode = 0; }
 
   for(int pos=0; pos<NUMLEDS; pos++) { 
     switch (colormode) {
@@ -414,6 +417,9 @@ void setcolors(void) {
         ledBAK[pos] %= 10;
         break;
 
+      default:
+        colormode = 0;
+
     }
   }
 }
@@ -422,35 +428,34 @@ void setcolors(void) {
 // -------------------------------------------------------------------------------------
 
 void checkbutton() {
-  static bool programmode = false;
   static bool longpressed = false;
   myBtn.read();
-  
-  if (myBtn.wasReleased() && !longpressed) {
-    if (programmode) {
-      flashleds(CRGB::Blue);
-      changedisplaymode();
-    }
-    else {
-      flashleds(CRGB::Gray);
-      changecolor();
-    }
+  if (myBtn.wasReleased() && longpressed) {
+    longpressed = false;
   }
   else if (myBtn.wasReleased()) {
-    longpressed = false;
+    switch (programmode) {
+  
+      case 0:
+        flashleds(CRGB::Gray);
+        changecolor();
+        break;
+  
+      case 1:
+        flashleds(CRGB::Blue);
+        changedisplaymode();
+        break;
+      
+      default:
+        programmode = 0;
+    }
   }
   
   if (myBtn.pressedFor(LONG_PRESS) && !longpressed) {
-    programmode = !programmode;
-    if (programmode) { 
-      flashleds(CRGB::Blue);
-      flashleds(CRGB::Blue);
-    }
-    else {
-      flashleds(CRGB::Gray);
-      flashleds(CRGB::Gray);
-    }
     longpressed = true;
+    flashleds(CRGB::White);
+    flashleds(CRGB::White);
+    programmode++;
   }
 }
 
@@ -488,7 +493,19 @@ void flashleds(long color) {
   }
   FastLED.show();
   delay(50);
-
-  
 }
+
+
+void testleds(void) {
+  static uint8_t color=0;
+  for(int i=0; i<NUMLEDS; i++) {
+    ledL[i].setHue(color+(i*3));
+    ledR[i].setHue(color+(i*3)+(NUMLEDS*3));
+  }
+  FastLED.show();
+  delay(20);
+  color++;
+}
+
+
 // ------------- the end --------------
