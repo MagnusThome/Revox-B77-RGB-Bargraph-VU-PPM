@@ -67,7 +67,7 @@ Button myBtn(BUTTONGPIO);
 
 int actualSampleRate;
 
-float thresholds[NUMLEDS+1] = {
+float thresholds[NUMLEDS] = {
 0.0100*INZERODB,    // -40dB
 0.0126*INZERODB,    // -38dB
 0.0158*INZERODB,    // -36dB
@@ -103,8 +103,7 @@ float thresholds[NUMLEDS+1] = {
 1.2589*INZERODB,    // +2dB
 1.4126*INZERODB,    // +3dB
 1.5849*INZERODB,    // +4dB
-1.7783*INZERODB,    // +5dB
-1.9953*INZERODB     // +6dB
+1.7783*INZERODB    // +5dB
 };
 
 
@@ -157,7 +156,7 @@ void loop() {
     ppmBallistics();
     updateLeds();
 #ifdef DEBUG
-    //Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
+    Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
     Serial.printf("%12d %4d %4d", ppmL, rmsL, vuL );
     Serial.printf("%12d %4d %4d", ppmR, rmsR, vuR );
     Serial.printf("%12.3f kHz", (float) actualSampleRate*UPDATEFREQ/2000 );
