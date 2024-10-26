@@ -429,6 +429,7 @@ void setcolors(void) {
 
 void checkbutton() {
   static bool longpressed = false;
+  
   myBtn.read();
   if (myBtn.wasReleased() && longpressed) {
     longpressed = false;
@@ -508,4 +509,5 @@ void testleds(void) {
 }
 
 
-// ------------- the end --------------
+
+// --------- THE END -------------------------------------------------------------------
