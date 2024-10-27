@@ -30,6 +30,7 @@
 #define PPM_DOT            4
 int displaymode;
 int colormode;
+int screensavermode;
 
 #define EEPROMADDRMODE  0
 #define EEPROMADDRCOLOR 2
@@ -128,7 +129,8 @@ void setup() {
   ppmFiltR.clear();
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(ledL, NUMLEDS);
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(ledR, NUMLEDS);
-  adc.begin(SAMPLERATE); 
+  adc.setFrequency(SAMPLERATE);
+  adc.begin(); 
   findDcBias();
   EEPROM.begin(256);
   myBtn.begin();
@@ -147,12 +149,6 @@ void loop() {
   sampleAudio();
   actualSampleRate++;
 
-  while(programmode==2) {
-    testleds();
-    checkbutton();
-  }
-
-  // UPDATE LEDS
   static unsigned long timer1;
   if (loopnow - timer1 >= 1000/UPDATEFREQ ) {  
     timer1 = loopnow;
@@ -160,16 +156,20 @@ void loop() {
     refreshRMS();
     vuBallistics();
     ppmBallistics();
-    updateLeds();
+
+    if (!screensaver()) {
+      updateLeds();
+    }
+    
 #ifdef DEBUG
     Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
-    Serial.printf("%12d %4d %4d", ppmL, rmsL, vuL );
-    Serial.printf("%12d %4d %4d", ppmR, rmsR, vuR );
+    Serial.printf("%12d %4d %4d", rmsL, vuL, ppmL );
+    Serial.printf("%12d %4d %4d", rmsR, vuR, ppmR );
     Serial.printf("%12.3f kHz", (float) actualSampleRate*UPDATEFREQ/2000 );
     Serial.println("\t\t\t0");
 #endif
-    actualSampleRate=0;
     checkbutton();
+    actualSampleRate=0;
   }
 }
 
@@ -466,7 +466,7 @@ void changedisplaymode(void) {
   adc.end(); 
   EEPROM.write(EEPROMADDRMODE, displaymode);
   EEPROM.commit();
-  adc.begin(SAMPLERATE); 
+  adc.begin(); 
 }
 
 void changecolor(void) {
@@ -474,7 +474,7 @@ void changecolor(void) {
   adc.end(); 
   EEPROM.write(EEPROMADDRCOLOR, colormode);
   EEPROM.commit();
-  adc.begin(SAMPLERATE); 
+  adc.begin(); 
   setcolors();
 }
 
@@ -497,15 +497,59 @@ void flashleds(long color) {
 }
 
 
-void testleds(void) {
-  static uint8_t color=0;
+// -------------------------------------------------------------------------------------
+
+bool screensaver (void) {
+  unsigned long loopnow = millis();
+  static unsigned long timer2;
+  static bool wait = false;
+  static bool startWithFade = true;
+
+  if ( vuL || vuR || ppmL || ppmR ) {
+    wait = false;
+    startWithFade = true;
+  }
+  else if (!wait) {
+    wait = true;
+    timer2 = loopnow;
+  }
+  else if (loopnow - timer2 >= 5*1000 ) {  
+    scrsaverRainbow(startWithFade);
+    startWithFade = false;
+    return true;
+  }  
+  return false;
+}
+
+
+void scrsaverRainbow(bool startWithFade) {
+  static uint8_t color = 0;
+  static uint8_t brghtn = 0;
+  
+  if (startWithFade) { 
+    
+    for(int x=0; x<50; x++) {
+      for(int i=0; i<NUMLEDS; i++) {
+        ledL[i].fadeToBlackBy(1);
+        ledR[i].fadeToBlackBy(1);
+      }
+      FastLED.show();
+      delay(65);
+    }
+    brghtn=0; 
+  }
+
+  const float rainbowSpread = 1.7;
   for(int i=0; i<NUMLEDS; i++) {
-    ledL[i].setHue(color+(i*3));
-    ledR[i].setHue(color+(i*3)+(NUMLEDS*3));
+    ledL[i].setHue(color+(int)(i*rainbowSpread));
+    ledR[i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
+    ledL[i] %= brghtn;
+    ledR[i] %= brghtn;
   }
   FastLED.show();
-  delay(20);
-  color++;
+  delay(3);
+  brghtn++;
+  brghtn = constrain(brghtn, 0, 50);  color++;
 }
 
 
