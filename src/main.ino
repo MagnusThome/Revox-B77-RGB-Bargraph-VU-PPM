@@ -3,6 +3,7 @@
 #include <EEPROM.h>
 #include <JC_Button.h>
 #include "RunningMedian.h"
+#include "RunningAverage.h"
 #include "TrueRMS.h"
 
 #define DEBUG
@@ -28,12 +29,13 @@
 #define VU_DOT             2
 #define PPM_BAR            3
 #define PPM_DOT            4
-int displaymode;
+int displmode;
 int colormode;
-int screensavermode;
+int scrsvmode;
 
 #define EEPROMADDRMODE  0
 #define EEPROMADDRCOLOR 2
+#define EEPROMADDRSCRSV 4
 
 CRGB ledL[NUMLEDS];
 CRGB ledR[NUMLEDS];
@@ -43,15 +45,16 @@ CRGB ledBAR[NUMLEDS];
 
 #define SAMPLERATE   48000
 #define UPDATEFREQ   12
-#define RMS_WINDOW   SAMPLERATE/UPDATEFREQ
-#define BIASBUF      255
+#define RMSWINDOW    SAMPLERATE/UPDATEFREQ
+#define BIASBUF      12000
 #define PPMFILTERBUF 10
+#define SCRSAVERTIMEOUT 600 // 10 minutes
 
 ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
 Rms2 readRmsR; 
-RunningMedian adcDcBiasL = RunningMedian(BIASBUF);
-RunningMedian adcDcBiasR = RunningMedian(BIASBUF);
+RunningAverage adcDcBiasL(BIASBUF);
+RunningAverage adcDcBiasR(BIASBUF);
 RunningMedian ppmFiltL   = RunningMedian(PPMFILTERBUF);
 RunningMedian ppmFiltR   = RunningMedian(PPMFILTERBUF);
 int adcL, adcR;
@@ -121,9 +124,9 @@ void setup() {
   Serial.println("Boot VU meter");
 #endif
   pinMode(BUTTONGPIO, INPUT_PULLUP);
-  readRmsL.begin(INMAX, RMS_WINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
+  readRmsL.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
   readRmsL.start();
-  readRmsR.begin(INMAX, RMS_WINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
+  readRmsR.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
   readRmsR.start();
   ppmFiltL.clear();
   ppmFiltR.clear();
@@ -134,8 +137,9 @@ void setup() {
   findDcBias();
   EEPROM.begin(256);
   myBtn.begin();
-  displaymode = EEPROM.read(EEPROMADDRMODE);
+  displmode = EEPROM.read(EEPROMADDRMODE);
   colormode = EEPROM.read(EEPROMADDRCOLOR);
+  scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   setcolors();
 }
 
@@ -157,15 +161,16 @@ void loop() {
     vuBallistics();
     ppmBallistics();
 
-    if (!screensaver()) {
+    if (!screensaver(true)) {
       updateLeds();
     }
     
 #ifdef DEBUG
+    Serial.printf("%12d %4d", dcBiasL-2048, dcBiasR-2048 );
     Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
     Serial.printf("%12d %4d %4d", rmsL, vuL, ppmL );
     Serial.printf("%12d %4d %4d", rmsR, vuR, ppmR );
-    Serial.printf("%12.3f kHz", (float) actualSampleRate*UPDATEFREQ/2000 );
+    Serial.printf("%12.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
     Serial.println("\t\t\t0");
 #endif
     checkbutton();
@@ -235,6 +240,8 @@ void vuBallistics(void) {
   accR+=i_gain*errR;
   posL+=(int)(p_gain*errL+accL);
   posR+=(int)(p_gain*errR+accR);
+//  posL--;
+//  posR--;
   posL = constrain(posL, 0, FULLSCALE);
   posR = constrain(posR, 0, FULLSCALE);
   vuL = posL;
@@ -243,7 +250,8 @@ void vuBallistics(void) {
 
 
 void findDcBias(void) {
-  for (int i=0; i<BIASBUF*100; i++ ) {  
+  delay(200);
+  for (int i=0; i<BIASBUF; i++ ) {  
     adcDcBiasL.add(adc.read());
     adcDcBiasR.add(adc.read());
   }
@@ -265,31 +273,31 @@ void updateLeds(void) {
   while (  ppmDotL<NUMLEDS  &&  ppmL>thresholds[ppmDotL] ) {
     ppmDotL++;
   }
-  ppmDotL--;   // from -1 (nothing) to 35
+  ppmDotL--;   // -1 (all off) and then 0 to 35
  
   ppmDotR = 0;
   while (  ppmDotR<NUMLEDS  &&  ppmR>thresholds[ppmDotR] ) {
     ppmDotR++;
   }
-  ppmDotR--;   // from -1 (nothing) to 35
+  ppmDotR--;   // -1 (all off) and then 0 to 35
 
   vuDotL = 0;
   while (  vuDotL<NUMLEDS  &&  vuL>thresholds[vuDotL] ) {
     vuDotL++;
   }
-  vuDotL--;   // from -1 (nothing) to 35
+  vuDotL--;   // -1 (all off) and then 0 to 35
  
   vuDotR = 0;
   while (  vuDotR<NUMLEDS  &&  vuR>thresholds[vuDotR] ) {
     vuDotR++;
   }
-  vuDotR--;   // from -1 (nothing) to 35
+  vuDotR--;   // -1 (all off) and then 0 to 35
 
 
      
   for(int pos=0; pos<NUMLEDS; pos++) { 
 
-    switch (displaymode) {
+    switch (displmode) {
 
       case PPM_DOT:
         if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
@@ -329,7 +337,7 @@ void updateLeds(void) {
         break;
 
       default:
-        displaymode = 0;
+        displmode = 0;
     }
   
   }
@@ -342,6 +350,8 @@ void updateLeds(void) {
 
 // CREATE DIFFERENT COLOR SETUPS
 void setcolors(void) {  
+
+  if (colormode>6) colormode = 0;
 
   for(int pos=0; pos<NUMLEDS; pos++) { 
     switch (colormode) {
@@ -416,10 +426,6 @@ void setcolors(void) {
         ledDOT[pos] %= 150;
         ledBAK[pos] %= 10;
         break;
-
-      default:
-        colormode = 0;
-
     }
   }
 }
@@ -444,7 +450,12 @@ void checkbutton() {
   
       case 1:
         flashleds(CRGB::Blue);
-        changedisplaymode();
+        changedisplmode();
+        break;
+      
+      case 2:
+        flashleds(CRGB::White);
+        changescrsv();
         break;
       
       default:
@@ -461,10 +472,10 @@ void checkbutton() {
 }
 
 
-void changedisplaymode(void) {
-  displaymode++;
+void changedisplmode(void) {
+  displmode++;
   adc.end(); 
-  EEPROM.write(EEPROMADDRMODE, displaymode);
+  EEPROM.write(EEPROMADDRMODE, displmode);
   EEPROM.commit();
   adc.begin(); 
 }
@@ -478,6 +489,20 @@ void changecolor(void) {
   setcolors();
 }
 
+
+void changescrsv(void) {
+  scrsvmode++;
+  adc.end(); 
+  EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
+  EEPROM.commit();
+  adc.begin(); 
+  for (int i=0; i<1000; i++) {
+    screensaver(false);
+  }
+}
+
+
+// -------------------------------------------------------------------------------------
 
 void flashleds(long color) {
   for (int i=0; i<NUMLEDS; i++) {
@@ -499,22 +524,38 @@ void flashleds(long color) {
 
 // -------------------------------------------------------------------------------------
 
-bool screensaver (void) {
+bool screensaver (bool useTimeout) {
   unsigned long loopnow = millis();
   static unsigned long timer2;
   static bool wait = false;
   static bool startWithFade = true;
 
-  if ( vuL || vuR || ppmL || ppmR ) {
+  if ( (vuL || vuR || ppmL || ppmR) && useTimeout ) {
     wait = false;
     startWithFade = true;
+    return false;
   }
   else if (!wait) {
     wait = true;
     timer2 = loopnow;
+    return false;
   }
-  else if (loopnow - timer2 >= 5*1000 ) {  
-    scrsaverRainbow(startWithFade);
+  else if (loopnow - timer2 >= SCRSAVERTIMEOUT*1000  ||  !useTimeout) {  
+
+    switch (scrsvmode) {
+      
+      case 0:
+        if(!useTimeout) delay(2);
+        return false;
+        
+      case 1:
+        scrsaverRainbow( min(startWithFade,useTimeout) );
+        break;
+        
+      default:      
+        scrsvmode = 0;
+        return false;
+    }
     startWithFade = false;
     return true;
   }  
@@ -522,23 +563,29 @@ bool screensaver (void) {
 }
 
 
+void fadetoblack(void) {
+  for(int x=0; x<50; x++) {
+    for(int i=0; i<NUMLEDS; i++) {
+      ledL[i].fadeToBlackBy(1);
+      ledR[i].fadeToBlackBy(1);
+    }
+    FastLED.show();
+    delay(65);
+  }
+}
+
+
 void scrsaverRainbow(bool startWithFade) {
   static uint8_t color = 0;
-  static uint8_t brghtn = 0;
+  static uint8_t brghtn;
   
   if (startWithFade) { 
-    
-    for(int x=0; x<50; x++) {
-      for(int i=0; i<NUMLEDS; i++) {
-        ledL[i].fadeToBlackBy(1);
-        ledR[i].fadeToBlackBy(1);
-      }
-      FastLED.show();
-      delay(65);
-    }
+    fadetoblack();    
     brghtn=0; 
   }
-
+  else {
+    brghtn=50; 
+  }
   const float rainbowSpread = 1.7;
   for(int i=0; i<NUMLEDS; i++) {
     ledL[i].setHue(color+(int)(i*rainbowSpread));
