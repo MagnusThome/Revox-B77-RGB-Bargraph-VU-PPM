@@ -465,9 +465,10 @@ void checkbutton() {
   
   if (myBtn.pressedFor(LONG_PRESS) && !longpressed) {
     longpressed = true;
-    flashleds(CRGB::White);
-    flashleds(CRGB::White);
     programmode++;
+    for (int i=0;i<programmode;i++) {
+      flashleds(CRGB::White);
+    }
   }
 }
 
@@ -512,17 +513,15 @@ void flashleds(long color) {
     ledR[i] %= 100;
   }
   FastLED.show();
-  delay(50);
+  delay(40);
   for (int i=0; i<NUMLEDS; i++) {
     ledL[i] = 0x000000;
     ledR[i] = 0x000000;
   }
   FastLED.show();
-  delay(50);
+  delay(80);
 }
 
-
-// -------------------------------------------------------------------------------------
 
 bool screensaver (bool useTimeout) {
   unsigned long loopnow = millis();
