@@ -48,15 +48,15 @@ CRGB ledBAR[NUMLEDS];
 #define RMSWINDOW    SAMPLERATE/UPDATEFREQ
 #define BIASBUF      12000
 #define PPMFILTERBUF 10
-#define SCRSAVERTIMEOUT 600 // 10 minutes
+#define SCRSAVERTIMEOUT 10 // 10 minutes
 
 ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
 Rms2 readRmsR; 
 RunningAverage adcDcBiasL(BIASBUF);
 RunningAverage adcDcBiasR(BIASBUF);
-RunningMedian ppmFiltL   = RunningMedian(PPMFILTERBUF);
-RunningMedian ppmFiltR   = RunningMedian(PPMFILTERBUF);
+RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
+RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
 int adcL, adcR;
 int dcBiasL, dcBiasR;
 int maxL,  maxR;
@@ -132,15 +132,15 @@ void setup() {
   ppmFiltR.clear();
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(ledL, NUMLEDS);
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(ledR, NUMLEDS);
-  adc.setFrequency(SAMPLERATE);
-  adc.begin(); 
-  findDcBias();
   EEPROM.begin(256);
   myBtn.begin();
   displmode = EEPROM.read(EEPROMADDRMODE);
   colormode = EEPROM.read(EEPROMADDRCOLOR);
   scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   setcolors();
+  adc.setFrequency(SAMPLERATE);
+  adc.begin(); 
+  findDcBias();
 }
 
   
@@ -250,16 +250,14 @@ void vuBallistics(void) {
 
 
 void findDcBias(void) {
-  delay(200);
-  for (int i=0; i<BIASBUF; i++ ) {  
+  adcDcBiasL.clear();
+  adcDcBiasR.clear();
+  for (int i=0; i<BIASBUF*8; i++ ) {  
     adcDcBiasL.add(adc.read());
     adcDcBiasR.add(adc.read());
   }
   dcBiasL = (int)adcDcBiasL.getAverage();
   dcBiasR = (int)adcDcBiasR.getAverage();
-#ifdef DEBUG
-  Serial.printf("dcBias %d %d\n", dcBiasL, dcBiasR );
-#endif
 }
 
 
@@ -401,21 +399,21 @@ void setcolors(void) {
         break;
         
       case 4:
-        ledBAK[pos] = CRGB::DarkGray;
-        ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledBAR[pos] %= 50;
-        ledDOT[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledDOT[pos] %= 255;
-        ledBAK[pos] %= 5;
-        break;
-
-      case 5:
         ledBAK[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
         ledBAR[pos] = ledBAK[pos];
         ledBAR[pos] %= 100;
         ledDOT[pos] = CRGB::Red;
         ledDOT[pos] %= 150;
         ledBAK[pos] %= 20;
+        break;
+
+      case 5:
+        ledBAK[pos] = CRGB::DarkGray;
+        ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
+        ledBAR[pos] %= 50;
+        ledDOT[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
+        ledDOT[pos] %= 255;
+        ledBAK[pos] %= 5;
         break;
 
       case 6:
@@ -434,11 +432,11 @@ void setcolors(void) {
 // -------------------------------------------------------------------------------------
 
 void checkbutton() {
-  static bool longpressed = false;
+  static bool prevWasLong = false;
   
   myBtn.read();
-  if (myBtn.wasReleased() && longpressed) {
-    longpressed = false;
+  if (myBtn.wasReleased() && prevWasLong) {
+    prevWasLong = false;
   }
   else if (myBtn.wasReleased()) {
     switch (programmode) {
@@ -463,12 +461,12 @@ void checkbutton() {
     }
   }
   
-  if (myBtn.pressedFor(LONG_PRESS) && !longpressed) {
-    longpressed = true;
-    programmode++;
-    for (int i=0;i<programmode;i++) {
-      flashleds(CRGB::White);
+  if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
+    prevWasLong = true;
+    for (int i=0;i<=programmode;i++) {
+      flashleds(CRGB::Gray);
     }
+    programmode++;
   }
 }
 
@@ -519,7 +517,7 @@ void flashleds(long color) {
     ledR[i] = 0x000000;
   }
   FastLED.show();
-  delay(80);
+  delay(100);
 }
 
 
