@@ -49,6 +49,8 @@ CRGB ledBAR[NUMLEDS];
 #define BIASBUF      12000
 #define PPMFILTERBUF 10
 #define SCRSAVERTIMEOUT 10 // minutes
+#define SCRSAVERAUTO 0
+#define SCRSAVERDEMO 1
 
 ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
@@ -108,7 +110,7 @@ float thresholds[NUMLEDS] = {
 1.2589*INZERODB,    // +2dB
 1.4126*INZERODB,    // +3dB
 1.5849*INZERODB,    // +4dB
-1.7783*INZERODB    // +5dB
+1.7783*INZERODB     // +5dB
 };
 
 
@@ -153,15 +155,15 @@ void loop() {
   sampleAudio();
   actualSampleRate++;
 
-  static unsigned long timer1;
-  if (loopnow - timer1 >= 1000/UPDATEFREQ ) {  
-    timer1 = loopnow;
+  static unsigned long looptimer;
+  if (loopnow - looptimer >= 1000/UPDATEFREQ ) {  
+    looptimer = loopnow;
     refreshPPM();
     refreshRMS();
     vuBallistics();
     ppmBallistics();
 
-    if (!screensaver(true)) {
+    if (!screensaver(SCRSAVERAUTO)) {
       updateLeds();
     }
     
@@ -442,18 +444,16 @@ void checkbutton() {
     switch (programmode) {
   
       case 0:
-        flashleds(CRGB::Gray);
         changecolor();
         break;
   
       case 1:
-        flashleds(CRGB::Blue);
         changedisplmode();
         break;
       
       case 2:
-        flashleds(CRGB::White);
         changescrsv();
+        flashleds(CRGB::Gray);
         break;
       
       default:
@@ -463,10 +463,10 @@ void checkbutton() {
   
   if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
     prevWasLong = true;
-    for (int i=0;i<=programmode;i++) {
-      flashleds(CRGB::Gray);
-    }
     programmode++;
+    if (programmode>2) programmode = 0;
+    showmodenumber(programmode);
+    findDcBias();
   }
 }
 
@@ -495,65 +495,62 @@ void changescrsv(void) {
   EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
   EEPROM.commit();
   adc.begin(); 
-  for (int i=0; i<1000; i++) {
-    screensaver(false);
+  for (int i=0; i<120; i++) {
+    screensaver(SCRSAVERDEMO);
   }
+}
+
+
+void showmodenumber(int number) {
+  for (int pos=0; pos<NUMLEDS; pos++) {
+    if ( number == (int)pos/5 ) { ledL[pos] = CRGB::White; }
+    else                        { ledL[pos] = CRGB::Black; }
+    ledL[pos] %= 40;
+    ledR[pos] = ledL[pos];
+  }
+  FastLED.show();
 }
 
 
 // -------------------------------------------------------------------------------------
 
-void flashleds(long color) {
-  for (int i=0; i<NUMLEDS; i++) {
-    ledL[i] = color;
-    ledL[i] %= 100;
-    ledR[i] = color;
-    ledR[i] %= 100;
-  }
-  FastLED.show();
-  delay(40);
-  for (int i=0; i<NUMLEDS; i++) {
-    ledL[i] = 0x000000;
-    ledR[i] = 0x000000;
-  }
-  FastLED.show();
-  delay(100);
-}
-
-
-bool screensaver (bool useTimeout) {
+bool screensaver(bool demomode) {
   unsigned long loopnow = millis();
-  static unsigned long timer2;
+  static unsigned long looptimer;
   static bool wait = false;
-  static bool startWithFade = true;
+  static bool initFade = true;
 
-  if ( (vuL || vuR || ppmL || ppmR) && useTimeout ) {
+
+  if (demomode) { delay(15); }  // get update frquency similar to live rate
+  
+  if ( !demomode  &&  (vuL+vuR+ppmL+ppmR>4) ) {
     wait = false;
-    startWithFade = true;
+    initFade = true;
     return false;
   }
   else if (!wait) {
     wait = true;
-    timer2 = loopnow;
+    looptimer = loopnow;
     return false;
   }
-  else if (loopnow - timer2 >= SCRSAVERTIMEOUT*60*1000  ||  !useTimeout) {  
+//  else if ( demomode  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
+  else if ( demomode  ||  (loopnow - looptimer >= 30000) ) {  
 
     switch (scrsvmode) {
       
       case 0:
-        if(!useTimeout) delay(2);
         return false;
         
       case 1:
-        scrsaverRainbow( min(startWithFade,useTimeout) );
+        if(demomode) { scrsaverRainbow(0); }
+        else         { scrsaverRainbow(initFade); }
         break;
         
       default:      
         scrsvmode = 0;
         return false;
     }
-    startWithFade = false;
+    initFade = false;
     return true;
   }  
   return false;
@@ -572,11 +569,11 @@ void fadetoblack(void) {
 }
 
 
-void scrsaverRainbow(bool startWithFade) {
+void scrsaverRainbow(bool initFade) {
   static uint8_t color = 0;
   static uint8_t brghtn;
   
-  if (startWithFade) { 
+  if (initFade) { 
     fadetoblack();    
     brghtn=0; 
   }
@@ -596,6 +593,25 @@ void scrsaverRainbow(bool startWithFade) {
   brghtn = constrain(brghtn, 0, 50);  color++;
 }
 
+
+// -------------------------------------------------------------------------------------
+
+void flashleds(long color) {
+  for (int i=0; i<NUMLEDS; i++) {
+    ledL[i] = color;
+    ledL[i] %= 60;
+    ledR[i] = color;
+    ledR[i] %= 60;
+  }
+  FastLED.show();
+  delay(40);
+  for (int i=0; i<NUMLEDS; i++) {
+    ledL[i] = 0x000000;
+    ledR[i] = 0x000000;
+  }
+  FastLED.show();
+  delay(40);
+}
 
 
 // --------- THE END -------------------------------------------------------------------
