@@ -5,7 +5,7 @@
 #include "RunningMedian.h"
 #include "TrueRMS.h"
 
-//#define DEBUG
+#define DEBUG
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
@@ -64,7 +64,8 @@ int ppmL,  ppmR;
 int vuL,   vuR;
 
 #define BUTTONGPIO 8
-#define LONG_PRESS 1000
+#define LONG_PRESS 500
+#define PROGRAMMODETIMEOUT 30 // seconds
 Button myBtn(BUTTONGPIO);
 int programmode = 0;
 
@@ -430,7 +431,14 @@ void setcolors(void) {
 
 void checkbutton() {
   static bool prevWasLong = false;
+  unsigned long loopnow = millis();
+
   
+  static unsigned long buttontimeout;
+  if (loopnow - buttontimeout >= PROGRAMMODETIMEOUT*1000 ) {  
+    programmode = 0;
+  }
+
   myBtn.read();
   if (myBtn.wasReleased() && prevWasLong) {
     prevWasLong = false;
@@ -439,14 +447,17 @@ void checkbutton() {
     switch (programmode) {
   
       case 0:
+        break;
+        
+      case 1:
         changecolor();
         break;
   
-      case 1:
+      case 2:
         changedisplmode();
         break;
       
-      case 2:
+      case 3:
         changescrsv();
         flashleds(CRGB::Gray);
         break;
@@ -458,9 +469,9 @@ void checkbutton() {
   
   if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
     prevWasLong = true;
-    programmode++;
-    if (programmode>2) programmode = 0;
     showmodenumber(programmode);
+    programmode++;
+    if (programmode>3) programmode = 0;
     adc.end();  
     EEPROM.write(EEPROMADDRVUPPM, displmode);
     EEPROM.write(EEPROMADDRCOLOR, colormode);
@@ -468,6 +479,7 @@ void checkbutton() {
     EEPROM.commit();
     adc.begin(); 
     findDcBias();
+    buttontimeout = loopnow;
   }
 }
 
@@ -492,9 +504,9 @@ void changescrsv(void) {
 
 void showmodenumber(int number) {
   for (int pos=0; pos<NUMLEDS; pos++) {
-    if ( number == (int)pos/5 ) { ledL[pos] = CRGB::White; }
-    else                        { ledL[pos] = CRGB::Black; }
-    ledL[pos] %= 40;
+    if ( number == (int)pos/(NUMLEDS/3) ) { ledL[pos] = CRGB::White; }
+    else                                  { ledL[pos] = CRGB::Black; }
+    ledL[pos] %= 15;
     ledR[pos] = ledL[pos];
   }
   FastLED.show();
@@ -527,6 +539,8 @@ bool screensaver(bool demomode) {
     switch (scrsvmode) {
       
       case 0:
+        if(demomode) { scrsaverRainbow(0); }
+        else         { scrsaverRainbow(initFade); }
         return false;
         
       case 1:
