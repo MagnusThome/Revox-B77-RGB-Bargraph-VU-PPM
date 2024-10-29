@@ -48,7 +48,7 @@ CRGB ledBAR[NUMLEDS];
 #define RMSWINDOW    SAMPLERATE/UPDATEFREQ
 #define BIASBUF      12000
 #define PPMFILTERBUF 10
-#define SCRSAVERTIMEOUT 10 // 10 minutes
+#define SCRSAVERTIMEOUT 10 // minutes
 
 ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
@@ -537,7 +537,7 @@ bool screensaver (bool useTimeout) {
     timer2 = loopnow;
     return false;
   }
-  else if (loopnow - timer2 >= SCRSAVERTIMEOUT*1000  ||  !useTimeout) {  
+  else if (loopnow - timer2 >= SCRSAVERTIMEOUT*60*1000  ||  !useTimeout) {  
 
     switch (scrsvmode) {
       
