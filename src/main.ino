@@ -3,7 +3,6 @@
 #include <EEPROM.h>
 #include <JC_Button.h>
 #include "RunningMedian.h"
-#include "RunningAverage.h"
 #include "TrueRMS.h"
 
 //#define DEBUG
@@ -33,7 +32,7 @@ int displmode;
 int colormode;
 int scrsvmode;
 
-#define EEPROMADDRMODE  0
+#define EEPROMADDRVUPPM 0
 #define EEPROMADDRCOLOR 2
 #define EEPROMADDRSCRSV 4
 
@@ -46,7 +45,6 @@ CRGB ledBAR[NUMLEDS];
 #define SAMPLERATE   48000
 #define UPDATEFREQ   12
 #define RMSWINDOW    SAMPLERATE/UPDATEFREQ
-#define BIASBUF      12000
 #define PPMFILTERBUF 10
 #define SCRSAVERTIMEOUT 10 // minutes
 #define SCRSAVERAUTO 0
@@ -55,8 +53,6 @@ CRGB ledBAR[NUMLEDS];
 ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
 Rms2 readRmsL; 
 Rms2 readRmsR; 
-RunningAverage adcDcBiasL(BIASBUF);
-RunningAverage adcDcBiasR(BIASBUF);
 RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
 RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
 int adcL, adcR;
@@ -136,7 +132,7 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(ledR, NUMLEDS);
   EEPROM.begin(256);
   myBtn.begin();
-  displmode = EEPROM.read(EEPROMADDRMODE);
+  displmode = EEPROM.read(EEPROMADDRVUPPM);
   colormode = EEPROM.read(EEPROMADDRCOLOR);
   scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   setcolors();
@@ -242,8 +238,6 @@ void vuBallistics(void) {
   accR+=i_gain*errR;
   posL+=(int)(p_gain*errL+accL);
   posR+=(int)(p_gain*errR+accR);
-//  posL--;
-//  posR--;
   posL = constrain(posL, 0, FULLSCALE);
   posR = constrain(posR, 0, FULLSCALE);
   vuL = posL;
@@ -252,14 +246,15 @@ void vuBallistics(void) {
 
 
 void findDcBias(void) {
-  adcDcBiasL.clear();
-  adcDcBiasR.clear();
-  for (int i=0; i<BIASBUF*8; i++ ) {  
-    adcDcBiasL.add(adc.read());
-    adcDcBiasR.add(adc.read());
+  long sumL = 0;
+  long sumR = 0;
+  delay(500);
+  for (int i=0; i<SAMPLERATE; i++ ) {  
+    sumL += adc.read();
+    sumR += adc.read();
   }
-  dcBiasL = (int)adcDcBiasL.getAverage();
-  dcBiasR = (int)adcDcBiasR.getAverage();
+  dcBiasL = (int)sumL/SAMPLERATE;
+  dcBiasR = (int)sumR/SAMPLERATE;
 }
 
 
@@ -466,6 +461,12 @@ void checkbutton() {
     programmode++;
     if (programmode>2) programmode = 0;
     showmodenumber(programmode);
+    adc.end();  
+    EEPROM.write(EEPROMADDRVUPPM, displmode);
+    EEPROM.write(EEPROMADDRCOLOR, colormode);
+    EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
+    EEPROM.commit();
+    adc.begin(); 
     findDcBias();
   }
 }
@@ -473,28 +474,16 @@ void checkbutton() {
 
 void changedisplmode(void) {
   displmode++;
-  adc.end(); 
-  EEPROM.write(EEPROMADDRMODE, displmode);
-  EEPROM.commit();
-  adc.begin(); 
 }
 
 void changecolor(void) {
   colormode++;
-  adc.end(); 
-  EEPROM.write(EEPROMADDRCOLOR, colormode);
-  EEPROM.commit();
-  adc.begin(); 
   setcolors();
 }
 
 
 void changescrsv(void) {
   scrsvmode++;
-  adc.end(); 
-  EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
-  EEPROM.commit();
-  adc.begin(); 
   for (int i=0; i<120; i++) {
     screensaver(SCRSAVERDEMO);
   }
@@ -521,7 +510,7 @@ bool screensaver(bool demomode) {
   static bool initFade = true;
 
 
-  if (demomode) { delay(15); }  // get update frquency similar to live rate
+  if (demomode) { delay(15); }  // get led update frequency similar to live rate
   
   if ( !demomode  &&  (vuL+vuR+ppmL+ppmR>4) ) {
     wait = false;
@@ -598,9 +587,9 @@ void scrsaverRainbow(bool initFade) {
 void flashleds(long color) {
   for (int i=0; i<NUMLEDS; i++) {
     ledL[i] = color;
-    ledL[i] %= 60;
+    ledL[i] %= 30;
     ledR[i] = color;
-    ledR[i] %= 60;
+    ledR[i] %= 30;
   }
   FastLED.show();
   delay(40);
