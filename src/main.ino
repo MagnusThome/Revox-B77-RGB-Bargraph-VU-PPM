@@ -6,7 +6,7 @@
 #include "RunningAverage.h"
 #include "TrueRMS.h"
 
-#define DEBUG
+//#define DEBUG
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
@@ -533,8 +533,7 @@ bool screensaver(bool demomode) {
     looptimer = loopnow;
     return false;
   }
-//  else if ( demomode  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
-  else if ( demomode  ||  (loopnow - looptimer >= 30000) ) {  
+  else if ( demomode  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
 
     switch (scrsvmode) {
       
