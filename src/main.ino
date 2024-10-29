@@ -65,7 +65,7 @@ int vuL,   vuR;
 
 #define BUTTONGPIO 8
 #define LONG_PRESS 500
-#define PROGRAMMODETIMEOUT 30 // seconds
+#define PROGRAMMODETIMEOUT 20 // seconds
 Button myBtn(BUTTONGPIO);
 int programmode = 0;
 
@@ -124,8 +124,8 @@ void setup() {
 #endif
   pinMode(BUTTONGPIO, INPUT_PULLUP);
   readRmsL.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
-  readRmsL.start();
   readRmsR.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
+  readRmsL.start();
   readRmsR.start();
   ppmFiltL.clear();
   ppmFiltR.clear();
@@ -138,6 +138,7 @@ void setup() {
   scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   setcolors();
   adc.setFrequency(SAMPLERATE);
+  adc.setBuffers(4, 64);
   adc.begin(); 
   findDcBias();
 }
@@ -435,8 +436,10 @@ void checkbutton() {
 
   
   static unsigned long buttontimeout;
-  if (loopnow - buttontimeout >= PROGRAMMODETIMEOUT*1000 ) {  
+  if (  programmode>0  &&  loopnow-buttontimeout>=PROGRAMMODETIMEOUT*1000  ) {  
+    showmodenumber(programmode);
     programmode = 0;
+    delay(200);
   }
 
   myBtn.read();
