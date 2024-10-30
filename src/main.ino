@@ -140,6 +140,7 @@ void setup() {
   adc.setFrequency(SAMPLERATE);
   adc.setBuffers(4, 64);
   adc.begin(); 
+  delay(1500);
   findDcBias();
 }
 
@@ -251,12 +252,12 @@ void findDcBias(void) {
   long sumL = 0;
   long sumR = 0;
   delay(500);
-  for (int i=0; i<SAMPLERATE; i++ ) {  
+  for (int i=0; i<(SAMPLERATE*2); i++ ) {  
     sumL += adc.read();
     sumR += adc.read();
   }
-  dcBiasL = (int)sumL/SAMPLERATE;
-  dcBiasR = (int)sumR/SAMPLERATE;
+  dcBiasL = (int)sumL/(SAMPLERATE*2);
+  dcBiasR = (int)sumR/(SAMPLERATE*2);
 }
 
 
@@ -527,7 +528,7 @@ bool screensaver(bool demomode) {
 
   if (demomode) { delay(15); }  // get led update frequency similar to live rate
   
-  if ( !demomode  &&  (vuL+vuR+ppmL+ppmR>4) ) {
+  if ( !demomode  &&  (vuL+vuR>10) ) {
     wait = false;
     initFade = true;
     return false;
@@ -542,8 +543,6 @@ bool screensaver(bool demomode) {
     switch (scrsvmode) {
       
       case 0:
-        if(demomode) { scrsaverRainbow(0); }
-        else         { scrsaverRainbow(initFade); }
         return false;
         
       case 1:
