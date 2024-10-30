@@ -165,10 +165,6 @@ void loop() {
     if (!screensaver(SCRSAVERAUTO)) {
       updateLeds();
     }
-    if (programmode) {
-      showmodenumber();
-    }
-    
 #ifdef DEBUG
     Serial.printf("%12d %4d", dcBiasL-2048, dcBiasR-2048 );
     Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
@@ -456,6 +452,7 @@ void checkbutton(void) {
     prevWasLong = false;
   }
   else if (myBtn.wasReleased()) {
+    buttontimeout = loopnow;
     switch (programmode) {
   
       case 0:
@@ -471,7 +468,6 @@ void checkbutton(void) {
       
       case 3:
         changescrsv();
-        flashleds(CRGB::Gray);
         break;
       
       default:
@@ -481,6 +477,9 @@ void checkbutton(void) {
   
   if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
     prevWasLong = true;
+    buttontimeout = loopnow;
+    programmode++;
+    showmodenumber();
     if(programmode) {
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
@@ -492,9 +491,8 @@ void checkbutton(void) {
       adc.begin(); 
       findDcBias();
     }
-    programmode++;
+    showmodenumber();
     if (programmode>3) programmode = 0;
-    buttontimeout = loopnow;
   }
 }
 
@@ -511,13 +509,19 @@ void changecolor(void) {
 
 void changescrsv(void) {
   scrsvmode++;
-  for (int i=0; i<120; i++) {
+  for (int i=0; i<200; i++) {
     screensaver(SCRSAVERDEMO);
   }
 }
 
 
 void showmodenumber(void) {
+  for (int i=0; i<NUMLEDS; i++) {
+    ledL[i] = 0x000000;
+    ledR[i] = 0x000000;
+  }
+  FastLED.show();
+  delay(30);
   for (int pos=0; pos<NUMLEDS; pos++) {
     if ( programmode == ((int)pos/(NUMLEDS/3)+1 ) ) { ledR[pos] = CRGB::White; }
     else                                            { ledR[pos] = CRGB::Black; }
@@ -575,6 +579,7 @@ void fadetoblack(void) {
   for(int x=0; x<50; x++) {
     for(int i=0; i<NUMLEDS; i++) {
       ledL[i].fadeToBlackBy(1);
+      if(programmode) continue;
       ledR[i].fadeToBlackBy(1);
     }
     FastLED.show();
@@ -597,8 +602,9 @@ void scrsaverRainbow(bool initFade) {
   const float rainbowSpread = 1.7;
   for(int i=0; i<NUMLEDS; i++) {
     ledL[i].setHue(color+(int)(i*rainbowSpread));
-    ledR[i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
     ledL[i] %= brghtn;
+    if(programmode) continue;
+    ledR[i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
     ledR[i] %= brghtn;
   }
   FastLED.show();
