@@ -5,7 +5,7 @@
 #include "RunningMedian.h"
 #include "TrueRMS.h"
 
-//#define DEBUG
+#define DEBUG
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
@@ -19,8 +19,6 @@
 #define FULLSCALE       INMAX/2
 #define INZERODB        775
 #define PPMNOISE        20    // ADC PPM noise floor   
-
-#define NUMLEDS         36
 
 // DISPLAY MODES
 #define PPM_DOT_AND_VU_BAR 0
@@ -36,8 +34,11 @@ int scrsvmode;
 #define EEPROMADDRCOLOR 2
 #define EEPROMADDRSCRSV 4
 
-CRGB ledL[NUMLEDS];
-CRGB ledR[NUMLEDS];
+#define NUMLEDS         36
+#define LEFT            0
+#define RGHT            1
+
+CRGB led[2][NUMLEDS];
 CRGB ledBAK[NUMLEDS];
 CRGB ledDOT[NUMLEDS];
 CRGB ledBAR[NUMLEDS];
@@ -130,8 +131,8 @@ void setup() {
   readRmsR.start();
   ppmFiltL.clear();
   ppmFiltR.clear();
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(ledL, NUMLEDS);
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(ledR, NUMLEDS);
+  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
+  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
   EEPROM.begin(256);
   myBtn.begin();
   displmode = EEPROM.read(EEPROMADDRVUPPM);
@@ -165,6 +166,7 @@ void loop() {
     if (!screensaver(SCRSAVERAUTO)) {
       updateLeds();
     }
+    showmodenumber();
 #ifdef DEBUG
     Serial.printf("%12d %4d", dcBiasL-2048, dcBiasR-2048 );
     Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
@@ -297,45 +299,40 @@ void updateLeds(void) {
     switch (displmode) {
 
       case PPM_DOT:
-        if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
-        else                { ledL[pos] = ledBAK[pos]; }
-        if(programmode) break;
-        if (ppmDotR == pos) { ledR[pos] = ledDOT[pos]; }
-        else                { ledR[pos] = ledBAK[pos]; }
+        if (ppmDotL == pos) { led[LEFT][pos] = ledDOT[pos]; }
+        else                { led[LEFT][pos] = ledBAK[pos]; }
+        if (ppmDotR == pos) { led[RGHT][pos] = ledDOT[pos]; }
+        else                { led[RGHT][pos] = ledBAK[pos]; }
         break;
     
       case PPM_BAR:
-        if (ppmDotL >= pos) { ledL[pos] = ledBAR[pos]; }
-        else                { ledL[pos] = ledBAK[pos]; }
-        if(programmode) break;
-        if (ppmDotR >= pos) { ledR[pos] = ledBAR[pos]; }
-        else                { ledR[pos] = ledBAK[pos]; }
+        if (ppmDotL >= pos) { led[LEFT][pos] = ledBAR[pos]; }
+        else                { led[LEFT][pos] = ledBAK[pos]; }
+        if (ppmDotR >= pos) { led[RGHT][pos] = ledBAR[pos]; }
+        else                { led[RGHT][pos] = ledBAK[pos]; }
         break;
       
       case VU_DOT:
-        if (vuDotL == pos)  { ledL[pos] = ledDOT[pos]; }
-        else                { ledL[pos] = ledBAK[pos]; }
-        if(programmode) break;
-        if (vuDotR == pos)  { ledR[pos] = ledDOT[pos]; }
-        else                { ledR[pos] = ledBAK[pos]; }
+        if (vuDotL == pos)  { led[LEFT][pos] = ledDOT[pos]; }
+        else                { led[LEFT][pos] = ledBAK[pos]; }
+        if (vuDotR == pos)  { led[RGHT][pos] = ledDOT[pos]; }
+        else                { led[RGHT][pos] = ledBAK[pos]; }
         break;
       
       case VU_BAR:
-        if (vuDotL >= pos)  { ledL[pos] = ledBAR[pos]; }
-        else                { ledL[pos] = ledBAK[pos]; }
-        if(programmode) break;
-        if (vuDotR >= pos)  { ledR[pos] = ledBAR[pos]; }
-        else                { ledR[pos] = ledBAK[pos]; }
+        if (vuDotL >= pos)  { led[LEFT][pos] = ledBAR[pos]; }
+        else                { led[LEFT][pos] = ledBAK[pos]; }
+        if (vuDotR >= pos)  { led[RGHT][pos] = ledBAR[pos]; }
+        else                { led[RGHT][pos] = ledBAK[pos]; }
         break;
       
       case PPM_DOT_AND_VU_BAR:
-        if (vuDotL >= pos)  { ledL[pos] = ledBAR[pos]; }
-        else                { ledL[pos] = ledBAK[pos]; }
-        if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
-        if(programmode) break;
-        if (vuDotR >= pos)  { ledR[pos] = ledBAR[pos]; }
-        else                { ledR[pos] = ledBAK[pos]; }
-        if (ppmDotR == pos) { ledR[pos] = ledDOT[pos]; }
+        if (vuDotL >= pos)  { led[LEFT][pos] = ledBAR[pos]; }
+        else                { led[LEFT][pos] = ledBAK[pos]; }
+        if (ppmDotL == pos) { led[LEFT][pos] = ledDOT[pos]; }
+        if (vuDotR >= pos)  { led[RGHT][pos] = ledBAR[pos]; }
+        else                { led[RGHT][pos] = ledBAK[pos]; }
+        if (ppmDotR == pos) { led[RGHT][pos] = ledDOT[pos]; }
         break;
 
       default:
@@ -438,7 +435,7 @@ void setcolors(void) {
 void checkbutton(void) {
   static bool prevWasLong = false;
   unsigned long loopnow = millis();
-
+  #define MAXPROGRAMMODES 3
   
   static unsigned long buttontimeout;
   if (  programmode>0  &&  loopnow-buttontimeout>=PROGRAMMODETIMEOUT*1000  ) {  
@@ -479,8 +476,8 @@ void checkbutton(void) {
     prevWasLong = true;
     buttontimeout = loopnow;
     programmode++;
-    showmodenumber();
     if(programmode) {
+      showmodenumber();
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
       EEPROM.write(EEPROMADDRCOLOR, colormode);
@@ -491,8 +488,7 @@ void checkbutton(void) {
       adc.begin(); 
       findDcBias();
     }
-    showmodenumber();
-    if (programmode>3) programmode = 0;
+    if (programmode>MAXPROGRAMMODES) programmode = 0;
   }
 }
 
@@ -516,16 +512,12 @@ void changescrsv(void) {
 
 
 void showmodenumber(void) {
-  for (int i=0; i<NUMLEDS; i++) {
-    ledL[i] = 0x000000;
-    ledR[i] = 0x000000;
-  }
-  FastLED.show();
-  delay(30);
-  for (int pos=0; pos<NUMLEDS; pos++) {
-    if ( programmode == ((int)pos/(NUMLEDS/3)+1 ) ) { ledR[pos] = CRGB::White; }
-    else                                            { ledR[pos] = CRGB::Black; }
-    ledR[pos] %= 20;
+  if(!programmode) return;
+  for (int pos=0; pos<=MAXPROGRAMMODES; pos++) {
+    led[LEFT][pos] = CRGB::Black; 
+    if ( pos+1 == programmode ) { 
+      led[LEFT][pos] = CRGB::White; 
+    }
   }
   FastLED.show();
 }
@@ -578,9 +570,8 @@ bool screensaver(bool demomode) {
 void fadetoblack(void) {
   for(int x=0; x<50; x++) {
     for(int i=0; i<NUMLEDS; i++) {
-      ledL[i].fadeToBlackBy(1);
-      if(programmode) continue;
-      ledR[i].fadeToBlackBy(1);
+      led[LEFT][i].fadeToBlackBy(1);
+      led[RGHT][i].fadeToBlackBy(1);
     }
     FastLED.show();
     delay(65);
@@ -601,11 +592,10 @@ void scrsaverRainbow(bool initFade) {
   }
   const float rainbowSpread = 1.7;
   for(int i=0; i<NUMLEDS; i++) {
-    ledL[i].setHue(color+(int)(i*rainbowSpread));
-    ledL[i] %= brghtn;
-    if(programmode) continue;
-    ledR[i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
-    ledR[i] %= brghtn;
+    led[LEFT][i].setHue(color+(int)(i*rainbowSpread));
+    led[LEFT][i] %= brghtn;
+    led[RGHT][i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
+    led[RGHT][i] %= brghtn;
   }
   FastLED.show();
   delay(3);
@@ -618,16 +608,16 @@ void scrsaverRainbow(bool initFade) {
 
 void flashleds(long color) {
   for (int i=0; i<NUMLEDS; i++) {
-    ledL[i] = color;
-    ledL[i] %= 30;
-    ledR[i] = color;
-    ledR[i] %= 30;
+    led[LEFT][i] = color;
+    led[LEFT][i] %= 30;
+    led[RGHT][i] = color;
+    led[RGHT][i] %= 30;
   }
   FastLED.show();
   delay(40);
   for (int i=0; i<NUMLEDS; i++) {
-    ledL[i] = 0x000000;
-    ledR[i] = 0x000000;
+    led[LEFT][i] = 0x000000;
+    led[RGHT][i] = 0x000000;
   }
   FastLED.show();
   delay(40);
