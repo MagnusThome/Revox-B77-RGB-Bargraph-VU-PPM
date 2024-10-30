@@ -5,15 +5,15 @@
 #include "RunningMedian.h"
 #include "TrueRMS.h"
 
-#define DEBUG
+//#define DEBUG
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
 #define OVRINPUTGPIO_L  2
 #define OVRINPUTGPIO_R  3
 
-#define LEDBARGPIO_L    14
-#define LEDBARGPIO_R    15
+#define LEDBARGPIO_L    15
+#define LEDBARGPIO_R    14
 
 #define INMAX           4096
 #define FULLSCALE       INMAX/2
@@ -42,6 +42,7 @@ CRGB ledBAK[NUMLEDS];
 CRGB ledDOT[NUMLEDS];
 CRGB ledBAR[NUMLEDS];
 
+#define ADCBUFFER    64
 #define SAMPLERATE   48000
 #define UPDATEFREQ   12
 #define RMSWINDOW    SAMPLERATE/UPDATEFREQ
@@ -138,7 +139,7 @@ void setup() {
   scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   setcolors();
   adc.setFrequency(SAMPLERATE);
-  adc.setBuffers(4, 64);
+  adc.setBuffers(4, ADCBUFFER);
   adc.begin(); 
   delay(1500);
   findDcBias();
@@ -161,9 +162,11 @@ void loop() {
     refreshRMS();
     vuBallistics();
     ppmBallistics();
-
     if (!screensaver(SCRSAVERAUTO)) {
       updateLeds();
+    }
+    if (programmode) {
+      showmodenumber();
     }
     
 #ifdef DEBUG
@@ -172,7 +175,7 @@ void loop() {
     Serial.printf("%12d %4d %4d", rmsL, vuL, ppmL );
     Serial.printf("%12d %4d %4d", rmsR, vuR, ppmR );
     Serial.printf("%12.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
-    Serial.println("\t\t\t0");
+    Serial.printf("\t\t%d\t0\n", programmode);
 #endif
     checkbutton();
     actualSampleRate=0;
@@ -300,6 +303,7 @@ void updateLeds(void) {
       case PPM_DOT:
         if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
         else                { ledL[pos] = ledBAK[pos]; }
+        if(programmode) break;
         if (ppmDotR == pos) { ledR[pos] = ledDOT[pos]; }
         else                { ledR[pos] = ledBAK[pos]; }
         break;
@@ -307,6 +311,7 @@ void updateLeds(void) {
       case PPM_BAR:
         if (ppmDotL >= pos) { ledL[pos] = ledBAR[pos]; }
         else                { ledL[pos] = ledBAK[pos]; }
+        if(programmode) break;
         if (ppmDotR >= pos) { ledR[pos] = ledBAR[pos]; }
         else                { ledR[pos] = ledBAK[pos]; }
         break;
@@ -314,6 +319,7 @@ void updateLeds(void) {
       case VU_DOT:
         if (vuDotL == pos)  { ledL[pos] = ledDOT[pos]; }
         else                { ledL[pos] = ledBAK[pos]; }
+        if(programmode) break;
         if (vuDotR == pos)  { ledR[pos] = ledDOT[pos]; }
         else                { ledR[pos] = ledBAK[pos]; }
         break;
@@ -321,6 +327,7 @@ void updateLeds(void) {
       case VU_BAR:
         if (vuDotL >= pos)  { ledL[pos] = ledBAR[pos]; }
         else                { ledL[pos] = ledBAK[pos]; }
+        if(programmode) break;
         if (vuDotR >= pos)  { ledR[pos] = ledBAR[pos]; }
         else                { ledR[pos] = ledBAK[pos]; }
         break;
@@ -328,9 +335,10 @@ void updateLeds(void) {
       case PPM_DOT_AND_VU_BAR:
         if (vuDotL >= pos)  { ledL[pos] = ledBAR[pos]; }
         else                { ledL[pos] = ledBAK[pos]; }
+        if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
+        if(programmode) break;
         if (vuDotR >= pos)  { ledR[pos] = ledBAR[pos]; }
         else                { ledR[pos] = ledBAK[pos]; }
-        if (ppmDotL == pos) { ledL[pos] = ledDOT[pos]; }
         if (ppmDotR == pos) { ledR[pos] = ledDOT[pos]; }
         break;
 
@@ -431,14 +439,14 @@ void setcolors(void) {
 
 // -------------------------------------------------------------------------------------
 
-void checkbutton() {
+void checkbutton(void) {
   static bool prevWasLong = false;
   unsigned long loopnow = millis();
 
   
   static unsigned long buttontimeout;
   if (  programmode>0  &&  loopnow-buttontimeout>=PROGRAMMODETIMEOUT*1000  ) {  
-    showmodenumber(programmode);
+    flashleds(CRGB::DarkGrey);
     programmode = 0;
     delay(200);
   }
@@ -473,16 +481,19 @@ void checkbutton() {
   
   if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
     prevWasLong = true;
-    showmodenumber(programmode);
+    if(programmode) {
+      adc.end();  
+      EEPROM.write(EEPROMADDRVUPPM, displmode);
+      EEPROM.write(EEPROMADDRCOLOR, colormode);
+      EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
+      EEPROM.commit();
+      adc.setFrequency(SAMPLERATE);
+      adc.setBuffers(4, ADCBUFFER);
+      adc.begin(); 
+      findDcBias();
+    }
     programmode++;
     if (programmode>3) programmode = 0;
-    adc.end();  
-    EEPROM.write(EEPROMADDRVUPPM, displmode);
-    EEPROM.write(EEPROMADDRCOLOR, colormode);
-    EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
-    EEPROM.commit();
-    adc.begin(); 
-    findDcBias();
     buttontimeout = loopnow;
   }
 }
@@ -506,12 +517,11 @@ void changescrsv(void) {
 }
 
 
-void showmodenumber(int number) {
+void showmodenumber(void) {
   for (int pos=0; pos<NUMLEDS; pos++) {
-    if ( number == (int)pos/(NUMLEDS/3) ) { ledL[pos] = CRGB::White; }
-    else                                  { ledL[pos] = CRGB::Black; }
-    ledL[pos] %= 15;
-    ledR[pos] = ledL[pos];
+    if ( programmode == ((int)pos/(NUMLEDS/3)+1 ) ) { ledR[pos] = CRGB::White; }
+    else                                            { ledR[pos] = CRGB::Black; }
+    ledR[pos] %= 20;
   }
   FastLED.show();
 }
