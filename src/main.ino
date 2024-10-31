@@ -7,8 +7,8 @@
 
 #define DEBUG
 
-#define INPUTGPIO_L     27
-#define INPUTGPIO_R     28
+#define INPUTGPIO_L     28
+#define INPUTGPIO_R     27
 #define OVRINPUTGPIO_L  2
 #define OVRINPUTGPIO_R  3
 
@@ -52,7 +52,7 @@ CRGB ledBAR[NUMLEDS];
 #define SCRSAVERAUTO 0
 #define SCRSAVERDEMO 1
 
-ADCInput adc(INPUTGPIO_L,INPUTGPIO_R);
+ADCInput adc(INPUTGPIO_R,INPUTGPIO_L);
 Rms2 readRmsL; 
 Rms2 readRmsR; 
 RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
@@ -184,8 +184,8 @@ void loop() {
 // -------------------------------------------------------------------------------------
 
 void sampleAudio(void) {
-  adcL = adc.read();
   adcR = adc.read();
+  adcL = adc.read();
   int left = constrain(abs(adcL-dcBiasL), 0, FULLSCALE);
   int rght = constrain(abs(adcR-dcBiasR), 0, FULLSCALE);
   readRmsL.update(left); 
@@ -254,8 +254,8 @@ void findDcBias(void) {
   long sumR = 0;
   delay(500);
   for (int i=0; i<(SAMPLERATE*2); i++ ) {  
-    sumL += adc.read();
     sumR += adc.read();
+    sumL += adc.read();
   }
   dcBiasL = (int)sumL/(SAMPLERATE*2);
   dcBiasR = (int)sumR/(SAMPLERATE*2);
@@ -506,7 +506,7 @@ void changecolor(void) {
 
 void changescrsv(void) {
   scrsvmode++;
-  for (int i=0; i<200; i++) {
+  for (int i=0; i<150; i++) {
     screensaver(SCRSAVERDEMO);
   }
 }
@@ -548,6 +548,13 @@ bool screensaver(bool demomode) {
     switch (scrsvmode) {
       
       case 0:
+        if(demomode) {    // NO screensaver, demoed as all black which is slightly illogical
+          for(int i=0; i<NUMLEDS; i++) {
+            led[LEFT][i] = CRGB::Black;;
+            led[RGHT][i] = CRGB::Black;;
+          }
+          FastLED.show();
+        }
         return false;
         
       case 1:
