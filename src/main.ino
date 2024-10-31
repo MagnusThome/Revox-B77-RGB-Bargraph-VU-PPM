@@ -67,7 +67,7 @@ int vuL,   vuR;
 
 #define BUTTONGPIO 8
 #define LONG_PRESS 500
-#define PROGRAMMODETIMEOUT 20 // seconds
+#define PROGRAMMODETIMEOUT 15 // seconds
 Button myBtn(BUTTONGPIO);
 int programmode = 0;
 
@@ -477,6 +477,7 @@ void checkbutton(void) {
     buttontimeout = loopnow;
     programmode++;
     if(programmode) {
+      if(programmode==1) { led[LEFT][0] = CRGB::White; };
       showmodenumber();
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
@@ -513,11 +514,10 @@ void changescrsv(void) {
 
 void showmodenumber(void) {
   if(!programmode) return;
-  for (int pos=0; pos<=MAXPROGRAMMODES; pos++) {
-    led[LEFT][pos] = CRGB::Black; 
-    if ( pos+1 == programmode ) { 
-      led[LEFT][pos] = CRGB::White; 
-    }
+  for (int pos=0; pos<=MAXPROGRAMMODES+3; pos++) {
+    if ( pos <= programmode-2 ) { led[LEFT][pos] = CRGB::Black; }
+    if ( pos == programmode-2 ) { led[LEFT][pos] = CRGB::Black; }
+    if ( pos == programmode )   { led[LEFT][pos] = CRGB::White; }
   }
   FastLED.show();
 }
@@ -532,7 +532,7 @@ bool screensaver(bool demomode) {
   static bool initFade = true;
 
 
-  if (demomode) { delay(15); }  // get led update frequency similar to live rate
+  if (demomode) delay(15);   // make led update frequency similar to live rate
   
   if ( !demomode  &&  (vuL+vuR>10) ) {
     wait = false;
