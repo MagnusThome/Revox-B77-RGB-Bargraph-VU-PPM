@@ -515,7 +515,6 @@ void changescrsv(void) {
 void showmodenumber(void) {
   if(!programmode) return;
   for (int pos=0; pos<=MAXPROGRAMMODES+3; pos++) {
-    if ( pos <= programmode-2 ) { led[LEFT][pos] = CRGB::Black; }
     if ( pos == programmode-2 ) { led[LEFT][pos] = CRGB::Black; }
     if ( pos == programmode )   { led[LEFT][pos] = CRGB::White; }
   }
