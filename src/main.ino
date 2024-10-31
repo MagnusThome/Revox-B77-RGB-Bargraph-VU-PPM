@@ -252,7 +252,7 @@ void vuBallistics(void) {
 void findDcBias(void) {
   long sumL = 0;
   long sumR = 0;
-  delay(500);
+  delay(50);
   for (int i=0; i<(SAMPLERATE*2); i++ ) {  
     sumR += adc.read();
     sumL += adc.read();
