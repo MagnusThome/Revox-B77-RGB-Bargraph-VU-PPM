@@ -7,8 +7,8 @@
 
 #define DEBUG
 
-#define INPUTGPIO_L     28
-#define INPUTGPIO_R     27
+#define INPUTGPIO_L     27
+#define INPUTGPIO_R     28
 #define OVRINPUTGPIO_L  2
 #define OVRINPUTGPIO_R  3
 
@@ -17,8 +17,8 @@
 
 #define INMAX           4096
 #define FULLSCALE       INMAX/2
-#define INZERODB        775
-#define PPMNOISE        20    // ADC PPM noise floor   
+#define INZERODB        700
+#define PPMNOISE        20    // ADC PPM BIAS noise floor   
 
 // DISPLAY MODES
 #define PPM_DOT_AND_VU_BAR 0
@@ -125,25 +125,26 @@ void setup() {
   Serial.println("Boot VU meter");
 #endif
   pinMode(BUTTONGPIO, INPUT_PULLUP);
+  myBtn.begin();
+  EEPROM.begin(256);
+  scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
+  displmode = EEPROM.read(EEPROMADDRVUPPM);
+  colormode = EEPROM.read(EEPROMADDRCOLOR);
+  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
+  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
+  setcolors();
+  updateLeds();
   readRmsL.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
   readRmsR.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
   readRmsL.start();
   readRmsR.start();
   ppmFiltL.clear();
   ppmFiltR.clear();
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
-  EEPROM.begin(256);
-  myBtn.begin();
-  displmode = EEPROM.read(EEPROMADDRVUPPM);
-  colormode = EEPROM.read(EEPROMADDRCOLOR);
-  scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
-  setcolors();
   adc.setFrequency(SAMPLERATE);
   adc.setBuffers(4, ADCBUFFER);
   adc.begin(); 
-  delay(1500);
-  findDcBias();
+  delay(500);
+  findDcBias(3);
 }
 
   
@@ -168,12 +169,12 @@ void loop() {
     }
     showmodenumber();
 #ifdef DEBUG
-    Serial.printf("%12d %4d", dcBiasL-2048, dcBiasR-2048 );
-    Serial.printf("%12d %4d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
-    Serial.printf("%12d %4d %4d", rmsL, vuL, ppmL );
-    Serial.printf("%12d %4d %4d", rmsR, vuR, ppmR );
-    Serial.printf("%12.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
-    Serial.printf("\t\t%d\t0\n", programmode);
+    Serial.printf("%4d %4d", dcBiasL-2048, dcBiasR-2048 );
+    Serial.printf("%12d %5d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
+    Serial.printf("%12d %5d %5d", rmsL, vuL, ppmL );
+    Serial.printf("%12d %5d %5d", rmsR, vuR, ppmR );
+    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
+    Serial.printf("\t0\n");
 #endif
     checkbutton();
     actualSampleRate=0;
@@ -184,8 +185,8 @@ void loop() {
 // -------------------------------------------------------------------------------------
 
 void sampleAudio(void) {
-  adcR = adc.read();
   adcL = adc.read();
+  adcR = adc.read();
   int left = constrain(abs(adcL-dcBiasL), 0, FULLSCALE);
   int rght = constrain(abs(adcR-dcBiasR), 0, FULLSCALE);
   readRmsL.update(left); 
@@ -242,6 +243,8 @@ void vuBallistics(void) {
   accR+=i_gain*errR;
   posL+=(int)(p_gain*errL+accL);
   posR+=(int)(p_gain*errR+accR);
+  posL--;
+  posR--;
   posL = constrain(posL, 0, FULLSCALE);
   posR = constrain(posR, 0, FULLSCALE);
   vuL = posL;
@@ -249,16 +252,16 @@ void vuBallistics(void) {
 }
 
 
-void findDcBias(void) {
-  long sumL = 0;
-  long sumR = 0;
+void findDcBias(int runs) {
+  uint32_t sumL = 0;
+  uint32_t sumR = 0;
   delay(50);
-  for (int i=0; i<(SAMPLERATE*2); i++ ) {  
-    sumR += adc.read();
+  for (int i=0; i<(SAMPLERATE*runs); i++ ) {  
     sumL += adc.read();
+    sumR += adc.read();
   }
-  dcBiasL = (int)sumL/(SAMPLERATE*2);
-  dcBiasR = (int)sumR/(SAMPLERATE*2);
+  dcBiasL = (int)sumL/(SAMPLERATE*runs);
+  dcBiasR = (int)sumR/(SAMPLERATE*runs);
 }
 
 
@@ -487,7 +490,7 @@ void checkbutton(void) {
       adc.setFrequency(SAMPLERATE);
       adc.setBuffers(4, ADCBUFFER);
       adc.begin(); 
-      findDcBias();
+      findDcBias(3);
     }
     if (programmode>MAXPROGRAMMODES) programmode = 0;
   }
@@ -514,8 +517,7 @@ void changescrsv(void) {
 
 void showmodenumber(void) {
   if(!programmode) return;
-  for (int pos=0; pos<=MAXPROGRAMMODES+3; pos++) {
-    if ( pos == programmode-2 ) { led[LEFT][pos] = CRGB::Black; }
+  for (int pos=0; pos<=MAXPROGRAMMODES+1; pos++) {
     if ( pos == programmode )   { led[LEFT][pos] = CRGB::White; }
   }
   FastLED.show();
