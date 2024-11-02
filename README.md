@@ -3,7 +3,7 @@ Replacement display that shows both VU and PPM with RGB LEDs
 
 Work in progress...
 
-Original vs LED matching ballsitics
+Original vs LED matching ballistics
 <a href=https://youtu.be/gn2JyQfEoPc>![image](https://github.com/user-attachments/assets/b7c2422b-5739-48bd-8a64-d9a4fd1826cb)</a>
 
 Color modes
