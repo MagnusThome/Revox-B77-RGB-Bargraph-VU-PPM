@@ -1,5 +1,5 @@
-# Revox B77 - RGB Bargraph VU & PPM
-Replacement display that shows both VU and PPM with RGB LEDs
+# Replacement LED bargraph VU & PPM for Revox B77
+### "Full RGB" LED display that can show either VU, PPM or VU+PPM simultaneously
 
 I bought myself an old Revox B77 that needed some fixing. Mainly as a fun project, I have always wanted a two track high speed B77. Among other things the left VU meter was broken. The spool winding was broken and despite my best efforts I just couldn't get a hold of the tail end of the extemely thin spool wire to re-attach it. So looking around on the internet for an oem spare part VU meter I found that these have been out of production for a while and the prices have sky rocketed. With shipping and VAT just one meter would cost me $250. And since it was said that, in worst case, they can differ ever so slightly in color and look, there was a small risk that I would need to buy two. So I decided why don't I have a bit of fun instead with some pcb and schematics design plus code, as yet another hobby project?  
 
