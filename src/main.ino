@@ -17,7 +17,7 @@
 
 #define INMAX           4096
 #define FULLSCALE       INMAX/2
-#define INZERODB        700
+#define INZERODB        775
 #define PPMNOISE        20    // ADC PPM BIAS noise floor   
 
 // DISPLAY MODES
