@@ -53,6 +53,7 @@ CRGB ledBAR[NUMLEDS];
 #define SCRSAVERTIMEOUT 10 // minutes
 #define SCRSAVERAUTO 0
 #define SCRSAVERDEMO 1
+#define SCRSAVEREND  2
 
 ADCInput adc(INPUTGPIO_R,INPUTGPIO_L);
 Rms2 readRmsL; 
@@ -476,9 +477,9 @@ void checkbutton(void) {
     programmode++;
     if(programmode) {
       showmodenumber();
+      screensaver(SCRSAVEREND);  // just one single call to end screensaver if active
     }
     if(programmode>1) {
-      showmodenumber();
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
       EEPROM.write(EEPROMADDRCOLOR, colormode);
@@ -521,31 +522,34 @@ void changedimmer(void) {
 
 void showmodenumber(void) {
   #define LEDSTEPS 5
-  static bool initial;
-  if(!programmode) {
-    initial = true;
-    return;
-  }
+  if(!programmode) { return; }
   for (int pos=0; pos<=(MAXPROGRAMMODES+LEDSTEPS)*LEDSTEPS; pos++) {
-    if ( programmode-1 == (int)((pos-1)/LEDSTEPS) ) { led[RIGHT][pos] = CRGB::White; }
+    if ( programmode-1 == (int)((pos-1)/LEDSTEPS) ) { led[RGHT][pos] = CRGB::White; }
   }
   FastLED.show();
-  initial = false;
 }
 
 
 // -------------------------------------------------------------------------------------
 
-bool screensaver(bool demomode) {
+bool screensaver(int demomode) {
   unsigned long loopnow = millis();
   static unsigned long looptimer;
   static bool wait = false;
   static bool initFade = true;
 
 
-  if (demomode) delay(15);   // make led update frequency similar to live rate
+  if ( demomode==SCRSAVEREND ) {
+    looptimer = loopnow;
+    return false;
+  }
+
+  if ( demomode==SCRSAVERDEMO ) {
+    delay(15);   // make led update frequency similar to live rate
+    initFade = false;
+  }
   
-  if ( !demomode  &&  (vuL+vuR>10) ) {
+  if ( demomode==SCRSAVERAUTO  &&  (vuL+vuR>10) ) {
     wait = false;
     initFade = true;
     return false;
@@ -555,23 +559,15 @@ bool screensaver(bool demomode) {
     looptimer = loopnow;
     return false;
   }
-  else if ( demomode  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
+  else if ( demomode==SCRSAVERDEMO  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
 
     switch (scrsvmode) {
       
       case 0:
-        if(demomode) {    // NO screensaver, demoed as all black which is slightly illogical
-          for(int i=0; i<NUMLEDS; i++) {
-            led[LEFT][i] = CRGB::Black;;
-            led[RGHT][i] = CRGB::Black;;
-          }
-          FastLED.show();
-        }
         return false;
         
       case 1:
-        if(demomode) { scrsaverRainbow(0); }
-        else         { scrsaverRainbow(initFade); }
+        scrsaverRainbow(initFade);
         break;
         
       default:      
