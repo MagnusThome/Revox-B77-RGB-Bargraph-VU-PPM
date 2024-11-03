@@ -517,7 +517,7 @@ void changedimmer(void) {
 
 
 void showmodenumber(void) {
-  #define LEDSTEPS 2
+  #define LEDSTEPS 5
   static bool initial;
   if(!programmode) {
     initial = true;
