@@ -4,15 +4,15 @@
 I bought myself an old Revox B77 that needed some fixing. Mainly as a fun project, I have always wanted a two track high speed B77. Among other things the left VU meter was broken. The spool winding was broken and despite my best efforts I just couldn't get a hold of the tail end of the extemely thin spool wire to re-attach it. So looking around on the internet for an oem spare part VU meter I found that they have been out of production for a while and the prices have sky rocketed. With shipping and VAT just one meter would cost me $250. And since it was said that, in worst case, they can differ ever so slightly in color and look, there was a small risk that I would need to buy two. So I decided why not have a bit of fun instead designing some pcb with schematics and code, as yet another hobby project!  
 
 All files are here on GitHub for you to order an empty pcb, solder paste stencil, the front panel (which also is just a regular pcb) and the electronic parts for you to assemble, solder and load the code on to. If soldering surface mount parts isn't your thing you can always check with me if I happen to have an extra spare board or two, this is me: magnust@gmail.com
-  
-## Original vs LED having matching levels and VU ballistics
-YouTube video:  
+
+&nbsp;
+## Original vs LED bar, matching levels and VU ballistics (YouTube video)
 <a href=https://youtu.be/gn2JyQfEoPc><img width="45%" src=https://github.com/user-attachments/assets/523b3b31-b0e6-4c62-a050-417aab0bb54a></a>
 
-## Changing color modes
-YouTube video:   
+## Showing some color modes (YouTube video)
 <a href="https://www.youtube.com/watch?v=gmQ4PkJidRk"><img width="45%" src=https://github.com/user-attachments/assets/0d9f4aed-5af1-4f7e-94bf-85054c0e0e47></a>
 
+&nbsp;
 ## Programming mode, changing colors, display mode and "screen saver"
   
 ### Change display colors
@@ -36,10 +36,12 @@ And yeah, it is not a screen saver in the real sense of the word, it's just some
 ### Leaving programming mode  
 There is a timeout when in programming mode, if no button is pressed at all for 15 seconds the screen will blink once and you will be back in normal mode. If you haven't long pressed to save your current choice any change will be ignored.
 
+&nbsp;
 ## Correct frequency response
 YouTube videos:  
 <a href="https://www.youtube.com/watch?v=C4RWhSTwp5w"><img width="45%" src=https://github.com/user-attachments/assets/98970c9d-ecae-4154-865b-9245905eb742></a> <a href="https://www.youtube.com/watch?v=5C-VhZuq3Lk"><img width="45%" src=https://github.com/user-attachments/assets/f2c46d56-bdae-4124-bc9c-d3463105e655></a>
 
+&nbsp;
 ## Some examples of color and display modes:
 In the pictures below the display is in program mode (shown by a white LED being turned on in the lower part of left display). Different color schemes are easily added, some distinct and some more oddball color schemes are already in the code.
   
