@@ -18,17 +18,17 @@ YouTube video:
 ### Change display colors
 First long press the front panel button __once__ and then toggle through all the color schemes with short presses. To save your choice long press again. 
   
+### Change display brightness
+First long press the front panel button __twice__ and then toggle through the different brightness levels with short presses. To save your choice long press again. 
+  
 ### Change display mode
-First long press the button __twice__ and then toggle through the below modes with short presses, preferably with music playing so you can differ between the modes. To save your choice long press once again. Display modes available are:
+First long press the button __three__ times and then toggle through the below modes with short presses, preferably with music playing so you can differ between the modes. To save your choice long press once again. Display modes available are:
 - VU (dot)
 - VU (bar)
 - PPM (dot)
 - PPM (bar)
 - VU (bar) and PPM (dot)
 
-### Change display brightness
-First long press the front panel button __three__ times and then toggle through the different brightness levels with short presses. To save your choice long press again. 
-  
 ### Change "screen saver"
 First long press the button __four__ times and then toggle through any available screen savers. After each short press the current choice will be shown for two seconds. The "screen saver OFF" option will just show the normal meter. To save your choice long press once again.
 And yeah, it is not a screen saver in the real sense of the word, it's just some fun color schemes that can be activated when there has been no input signal for a while.
