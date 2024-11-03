@@ -480,7 +480,6 @@ void checkbutton(void) {
     buttontimeout = loopnow;
     programmode++;
     if(programmode) {
-      if(programmode==1) { led[LEFT][0] = CRGB::White; };
       showmodenumber();
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
@@ -516,11 +515,18 @@ void changescrsv(void) {
 
 
 void showmodenumber(void) {
-  if(!programmode) return;
-  for (int pos=0; pos<=MAXPROGRAMMODES+1; pos++) {
-    if ( pos == programmode )   { led[LEFT][pos] = CRGB::White; }
+  #define LEDSTEPS 2
+  static bool initial;
+  if(!programmode) {
+    initial = true;
+    return;
+  }
+  for (int pos=0; pos<=(MAXPROGRAMMODES+LEDSTEPS)*LEDSTEPS; pos++) {
+    if ( initial  &&  (int)(pos/LEDSTEPS)<1 ) { led[LEFT][pos] = CRGB::White; };
+    if ( programmode == (int)(pos/LEDSTEPS) ) { led[LEFT][pos] = CRGB::White; }
   }
   FastLED.show();
+  initial = false;
 }
 
 
