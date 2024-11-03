@@ -29,10 +29,12 @@
 int displmode;
 int colormode;
 int scrsvmode;
+int dimmer;
 
 #define EEPROMADDRVUPPM 0
 #define EEPROMADDRCOLOR 2
 #define EEPROMADDRSCRSV 4
+#define EEPROMADDRDIMMR 6
 
 #define NUMLEDS         36
 #define LEFT            0
@@ -130,8 +132,10 @@ void setup() {
   scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
   displmode = EEPROM.read(EEPROMADDRVUPPM);
   colormode = EEPROM.read(EEPROMADDRCOLOR);
+  dimmer    = EEPROM.read(EEPROMADDRDIMMR);
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
+  FastLED.setBrightness(127+dimmer);
   setcolors();
   updateLeds();
   readRmsL.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
@@ -156,7 +160,8 @@ void loop() {
   unsigned long loopnow = millis();
   sampleAudio();
   actualSampleRate++;
-
+  FastLED.setBrightness(127+dimmer);
+  
   static unsigned long looptimer;
   if (loopnow - looptimer >= 1000/UPDATEFREQ ) {  
     looptimer = loopnow;
@@ -363,10 +368,9 @@ void setcolors(void) {
         else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
         else             { ledBAK[pos] = CRGB::Green;  }
         ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 150;
         ledDOT[pos] = CRGB::Cyan;
-        ledDOT[pos] %= 80;
-        ledBAK[pos] %= 20;
+        ledDOT[pos] %= 140;
+        ledBAK[pos] %= 40;
         break;
         
       case 1:
@@ -374,10 +378,8 @@ void setcolors(void) {
         else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
         else             { ledBAK[pos] = CRGB::Green;  }
         ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 80;
         ledDOT[pos] = ledBAK[pos];
-        ledDOT[pos] %= 180;
-        ledBAK[pos] %= 10;
+        ledBAK[pos] %= 20;
         break;
 
       case 2:
@@ -385,10 +387,9 @@ void setcolors(void) {
         else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
         else             { ledBAK[pos] = CRGB::Green;  }
         ledBAR[pos] = CRGB::White; 
-        ledBAR[pos] %= 30;
+        ledBAR[pos] %= 50;
         ledDOT[pos] = ledBAK[pos];
-        ledDOT[pos] %= 180;
-        ledBAK[pos] %= 30;
+        ledBAK[pos] %= 50;
         break;
 
       case 3:
@@ -396,37 +397,33 @@ void setcolors(void) {
         else if (pos>24) { ledBAK[pos] = CRGB::Teal; }
         else             { ledBAK[pos] = CRGB::DarkGray;  }
         ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 70;
+        ledBAR[pos] %= 120;
         ledDOT[pos] = CRGB::Red;
-        ledDOT[pos] %= 60;
-        ledBAK[pos] %= 20;
+        ledDOT[pos] %= 100;
+        ledBAK[pos] %= 25;
         break;
         
       case 4:
         ledBAK[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
         ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 100;
+        ledBAR[pos] %= 170;
         ledDOT[pos] = CRGB::Red;
-        ledDOT[pos] %= 150;
-        ledBAK[pos] %= 20;
+        ledBAK[pos] %= 25;
         break;
 
       case 5:
         ledBAK[pos] = CRGB::DarkGray;
         ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledBAR[pos] %= 50;
+        ledBAR[pos] %= 170;
         ledDOT[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledDOT[pos] %= 255;
-        ledBAK[pos] %= 5;
+        ledBAK[pos] %= 30;
         break;
 
       case 6:
         ledBAK[pos] = CRGB::Black;
         ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 300, -20)); 
-        ledBAR[pos] %= 100;
+        ledBAR[pos] %= 170;
         ledDOT[pos] = CRGB::White;
-        ledDOT[pos] %= 150;
-        ledBAK[pos] %= 10;
         break;
     }
   }
@@ -438,7 +435,7 @@ void setcolors(void) {
 void checkbutton(void) {
   static bool prevWasLong = false;
   unsigned long loopnow = millis();
-  #define MAXPROGRAMMODES 3
+  #define MAXPROGRAMMODES 4
   
   static unsigned long buttontimeout;
   if (  programmode>0  &&  loopnow-buttontimeout>=PROGRAMMODETIMEOUT*1000  ) {  
@@ -454,22 +451,20 @@ void checkbutton(void) {
   else if (myBtn.wasReleased()) {
     buttontimeout = loopnow;
     switch (programmode) {
-  
       case 0:
         break;
-        
       case 1:
         changecolor();
         break;
-  
       case 2:
         changedisplmode();
         break;
-      
       case 3:
+        changedimmer();
+        break;
+      case 4:
         changescrsv();
         break;
-      
       default:
         programmode = 0;
     }
@@ -485,6 +480,7 @@ void checkbutton(void) {
       EEPROM.write(EEPROMADDRVUPPM, displmode);
       EEPROM.write(EEPROMADDRCOLOR, colormode);
       EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
+      EEPROM.write(EEPROMADDRDIMMR, dimmer);
       EEPROM.commit();
       adc.setFrequency(SAMPLERATE);
       adc.setBuffers(4, ADCBUFFER);
@@ -511,6 +507,12 @@ void changescrsv(void) {
   for (int i=0; i<150; i++) {
     screensaver(SCRSAVERDEMO);
   }
+}
+
+
+void changedimmer(void) {
+  dimmer -= 20;
+  if(dimmer<-100) dimmer=100;  
 }
 
 
@@ -623,9 +625,9 @@ void scrsaverRainbow(bool initFade) {
 void flashleds(long color) {
   for (int i=0; i<NUMLEDS; i++) {
     led[LEFT][i] = color;
-    led[LEFT][i] %= 30;
+    led[LEFT][i] %= 50;
     led[RGHT][i] = color;
-    led[RGHT][i] %= 30;
+    led[RGHT][i] %= 50;
   }
   FastLED.show();
   delay(40);
