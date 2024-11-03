@@ -3,7 +3,7 @@
 
 I bought myself an old Revox B77 that needed some fixing. Mainly as a fun project, I have always wanted a two track high speed B77. Among other things the left VU meter was broken. The spool winding was broken and despite my best efforts I just couldn't get a hold of the tail end of the extemely thin spool wire to re-attach it. So looking around on the internet for an oem spare part VU meter I found that they have been out of production for a while and the prices have sky rocketed. With shipping and VAT just one meter would cost me $250. And since it was said that, in worst case, they can differ ever so slightly in color and look, there was a small risk that I would need to buy two. So I decided why not have a bit of fun instead designing some pcb with schematics and code, as yet another hobby project!  
 
-All files are here on GitHub for you to order an empty pcb, the front panel (which also is just a regular pcb) and the electronic parts for you to assemble, solder and load the code on to. 
+All files are here on GitHub for you to order an empty pcb, solder paste stencil, the front panel (which also is just a regular pcb) and the electronic parts for you to assemble, solder and load the code on to. If soldering surface mount parts isn't your thing you can always check with me if I happen to have an extra spare board or two, this is me: magnust@gmail.com
   
 ## Original vs LED having matching levels and VU ballistics
 YouTube video:  
