@@ -5,7 +5,7 @@ I bought myself an old Revox B77 that needed some fixing. Mainly as a fun projec
 
 All files are here on GitHub for you to order an empty pcb, the front panel (which also is just a regular pcb) and the electronic parts for you to assemble, solder and load the code on to. 
   
-## Programming mode, changing display colors, display mode and "screen saver"
+## Programming mode, changing colors, display mode and "screen saver"
   
 ### Change display colors
 First long press the front panel button __once__ and then toggle through all the color schemes with short presses. To save your choice long press again. 
