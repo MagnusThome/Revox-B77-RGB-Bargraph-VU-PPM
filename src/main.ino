@@ -524,8 +524,8 @@ void showmodenumber(void) {
     return;
   }
   for (int pos=0; pos<=(MAXPROGRAMMODES+LEDSTEPS)*LEDSTEPS; pos++) {
-    if ( initial  &&  (int)(pos/LEDSTEPS)<1 ) { led[LEFT][pos] = CRGB::White; };
-    if ( programmode == (int)(pos/LEDSTEPS) ) { led[LEFT][pos] = CRGB::White; }
+    if ( initial  &&  (int)((pos-1)/LEDSTEPS)<1 ) { led[LEFT][pos] = CRGB::White; };
+    if ( programmode == (int)((pos-1)/LEDSTEPS) ) { led[LEFT][pos] = CRGB::White; }
   }
   FastLED.show();
   initial = false;
