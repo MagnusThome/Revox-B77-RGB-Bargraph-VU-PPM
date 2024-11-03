@@ -476,6 +476,9 @@ void checkbutton(void) {
     programmode++;
     if(programmode) {
       showmodenumber();
+    }
+    if(programmode>1) {
+      showmodenumber();
       adc.end();  
       EEPROM.write(EEPROMADDRVUPPM, displmode);
       EEPROM.write(EEPROMADDRCOLOR, colormode);
@@ -524,8 +527,8 @@ void showmodenumber(void) {
     return;
   }
   for (int pos=0; pos<=(MAXPROGRAMMODES+LEDSTEPS)*LEDSTEPS; pos++) {
-    if ( initial  &&  (int)((pos-1)/LEDSTEPS)<1 ) { led[LEFT][pos] = CRGB::White; };
-    if ( programmode == (int)((pos-1)/LEDSTEPS) ) { led[LEFT][pos] = CRGB::White; }
+    //if ( initial  &&  (int)((pos-1)/LEDSTEPS)<1 ) { led[LEFT][pos] = CRGB::White; };
+    if ( programmode-1 == (int)((pos-1)/LEDSTEPS) ) { led[LEFT][pos] = CRGB::White; }
   }
   FastLED.show();
   initial = false;
