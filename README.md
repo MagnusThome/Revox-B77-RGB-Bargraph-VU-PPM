@@ -26,12 +26,14 @@ First long press the button __twice__ and then toggle through the below modes wi
 - PPM (bar)
 - VU (bar) and PPM (dot)
 
+### Change display brightness
+First long press the front panel button __three__ times and then toggle through the different brightness levels with short presses. To save your choice long press again. 
+  
 ### Change "screen saver"
-First long press the button __three__ times and then toggle through any available screen savers. After each short press the current choice will be shown for two seconds. The "screen saver OFF" option will just show the normal meter. To save your choice long press once again.
+First long press the button __four__ times and then toggle through any available screen savers. After each short press the current choice will be shown for two seconds. The "screen saver OFF" option will just show the normal meter. To save your choice long press once again.
 And yeah, it is not a screen saver in the real sense of the word, it's just some fun color schemes that can be activated when there has been no input signal for a while.
   
 ### Leaving programming mode  
-
 There is a timeout when in programming mode, if no button is pressed at all for 15 seconds the screen will blink once and you will be back in normal mode. If you haven't long pressed to save your current choice any change will be ignored.
 
 ## Correct frequency response
@@ -39,7 +41,6 @@ YouTube videos:
 <a href="https://www.youtube.com/watch?v=C4RWhSTwp5w"><img width="45%" src=https://github.com/user-attachments/assets/98970c9d-ecae-4154-865b-9245905eb742></a> <a href="https://www.youtube.com/watch?v=5C-VhZuq3Lk"><img width="45%" src=https://github.com/user-attachments/assets/f2c46d56-bdae-4124-bc9c-d3463105e655></a>
 
 ## Some examples of color and display modes:
-  
 In the pictures below the display is in program mode (shown by a white LED being turned on in the lower part of left display). Different color schemes are easily added, some distinct and some more oddball color schemes are already in the code.
   
 ### VU (dot)
