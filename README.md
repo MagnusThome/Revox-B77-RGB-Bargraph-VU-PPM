@@ -20,7 +20,7 @@ First long press the button __twice__ and then toggle through the below modes wi
 
 ### Change "screen saver"
 First long press the button __three__ times and then toggle through any available screen savers. After each short press the current choice will be shown for two seconds. The "screen saver OFF" option will just show the normal meter. To save your choice long press once again.
-Well yeah, it is not a screen saver in the sense of the word, it's just some fun color schemes that can be activated when there has been no input signal for a while.
+And yeah, it is not a screen saver in the real sense of the word, it's just some fun color schemes that can be activated when there has been no input signal for a while.
   
 ### Leaving programming mode  
 
