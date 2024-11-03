@@ -24,7 +24,7 @@ And yeah, it is not a screen saver in the real sense of the word, it's just some
   
 ### Leaving programming mode  
 
-There is a timeout when i programming mode, if no button is pressed at all for 15 seconds the screen will blink once and you will be back in normal mode. If you haven't long pressed to save your current choice any change will be ignored.
+There is a timeout when in programming mode, if no button is pressed at all for 15 seconds the screen will blink once and you will be back in normal mode. If you haven't long pressed to save your current choice any change will be ignored.
 
 ## Original vs LED having matching levels and VU ballistics
 YouTube video:  
