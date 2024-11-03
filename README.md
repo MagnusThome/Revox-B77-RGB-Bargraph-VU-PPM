@@ -5,6 +5,14 @@ I bought myself an old Revox B77 that needed some fixing. Mainly as a fun projec
 
 All files are here on GitHub for you to order an empty pcb, the front panel (which also is just a regular pcb) and the electronic parts for you to assemble, solder and load the code on to. 
   
+## Original vs LED having matching levels and VU ballistics
+YouTube video:  
+<a href=https://youtu.be/gn2JyQfEoPc><img width="45%" src=https://github.com/user-attachments/assets/523b3b31-b0e6-4c62-a050-417aab0bb54a></a>
+
+## Changing color modes
+YouTube video:   
+<a href="https://www.youtube.com/watch?v=gmQ4PkJidRk"><img width="45%" src=https://github.com/user-attachments/assets/0d9f4aed-5af1-4f7e-94bf-85054c0e0e47></a>
+
 ## Programming mode, changing colors, display mode and "screen saver"
   
 ### Change display colors
@@ -25,14 +33,6 @@ And yeah, it is not a screen saver in the real sense of the word, it's just some
 ### Leaving programming mode  
 
 There is a timeout when in programming mode, if no button is pressed at all for 15 seconds the screen will blink once and you will be back in normal mode. If you haven't long pressed to save your current choice any change will be ignored.
-
-## Original vs LED having matching levels and VU ballistics
-YouTube video:  
-<a href=https://youtu.be/gn2JyQfEoPc><img width="45%" src=https://github.com/user-attachments/assets/523b3b31-b0e6-4c62-a050-417aab0bb54a></a>
-
-## Changing color modes
-YouTube video:   
-<a href="https://www.youtube.com/watch?v=gmQ4PkJidRk"><img width="45%" src=https://github.com/user-attachments/assets/0d9f4aed-5af1-4f7e-94bf-85054c0e0e47></a>
 
 ## Correct frequency response
 YouTube videos:  
