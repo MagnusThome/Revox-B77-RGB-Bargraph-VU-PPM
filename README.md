@@ -11,7 +11,7 @@ All files are here on GitHub for you to order an empty pcb, the front panel (whi
 First long press the front panel button __once__ and then toggle through all the color schemes with short presses. To save your choice long press again. 
   
 ### Change display mode
-First long press the button __twice__ and then toggle through the below modes with short presses, preferably with music playing so you can differ between the modes. To save your choice long press once again. Display modes available are :
+First long press the button __twice__ and then toggle through the below modes with short presses, preferably with music playing so you can differ between the modes. To save your choice long press once again. Display modes available are:
 - VU (dot)
 - VU (bar)
 - PPM (dot)
