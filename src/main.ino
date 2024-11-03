@@ -457,10 +457,10 @@ void checkbutton(void) {
         changecolor();
         break;
       case 2:
-        changedisplmode();
+        changedimmer();
         break;
       case 3:
-        changedimmer();
+        changedisplmode();
         break;
       case 4:
         changescrsv();
