@@ -18,5 +18,4 @@ uint8_t ppmBallistics(uint8_t channel);
 uint8_t vuBallistics(uint8_t channel);
 
 
-
 #endif
