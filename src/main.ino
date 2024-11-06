@@ -1,120 +1,23 @@
-#include <FastLED.h>
-#include <ADCInput.h>
-#include <EEPROM.h>
+#include <Arduino.h>
 #include <JC_Button.h>
-#include "RunningMedian.h"
-#include "TrueRMS.h"
+#include "measurement.h"
+#include "display.h"
 
 #define DEBUG
 
-#define INPUTGPIO_L     27
-#define INPUTGPIO_R     28
-#define OVRINPUTGPIO_L  2
-#define OVRINPUTGPIO_R  3
+#define L 0
+#define R 1
 
-#define LEDBARGPIO_L    15
-#define LEDBARGPIO_R    14
-
-#define INMAX           4096
-#define FULLSCALE       INMAX/2
-#define INZERODB        775
-#define PPMNOISE        20    // ADC PPM BIAS noise floor   
-
-// DISPLAY MODES
-#define PPM_DOT_AND_VU_BAR 0
-#define VU_BAR             1
-#define VU_DOT             2
-#define PPM_BAR            3
-#define PPM_DOT            4
-int displmode;
-int colormode;
-int scrsvmode;
-int dimmer;
-
-#define EEPROMADDRVUPPM 0
-#define EEPROMADDRCOLOR 2
-#define EEPROMADDRSCRSV 4
-#define EEPROMADDRDIMMR 6
-
-#define NUMLEDS         36
-#define LEFT            0
-#define RGHT            1
-
-CRGB led[2][NUMLEDS];
-CRGB ledBAK[NUMLEDS];
-CRGB ledDOT[NUMLEDS];
-CRGB ledBAR[NUMLEDS];
-
-#define ADCBUFFER    64
-#define SAMPLERATE   48000
-#define UPDATEFREQ   12
-#define RMSWINDOW    SAMPLERATE/UPDATEFREQ
-#define PPMFILTERBUF 10
-#define SCRSAVERTIMEOUT 10 // minutes
-#define SCRSAVERAUTO 0
-#define SCRSAVERDEMO 1
-#define SCRSAVEREND  2
-
-ADCInput adc(INPUTGPIO_R,INPUTGPIO_L);
-Rms2 readRmsL; 
-Rms2 readRmsR; 
-RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
-RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
-int adcL, adcR;
-int dcBiasL, dcBiasR;
-int maxL,  maxR;
-int rmsL,  rmsR;
-int peakL, peakR;
-int ppmL,  ppmR;
-int vuL,   vuR;
+uint8_t vu[NUMCHANNELS];
+uint8_t ppm[NUMCHANNELS];
 
 #define BUTTONGPIO 8
 #define LONG_PRESS 500
 #define PROGRAMMODETIMEOUT 15 // seconds
 Button myBtn(BUTTONGPIO);
-int programmode = 0;
+uint8_t programmode = 0;
 
 int actualSampleRate;
-
-float thresholds[NUMLEDS] = {
-0.0100*INZERODB,    // -40dB
-0.0126*INZERODB,    // -38dB
-0.0158*INZERODB,    // -36dB
-0.0200*INZERODB,    // -34dB
-0.0251*INZERODB,    // -32dB
-0.0316*INZERODB,    // -30dB
-0.0398*INZERODB,    // -28dB
-0.0501*INZERODB,    // -26dB
-0.0631*INZERODB,    // -24dB
-0.0794*INZERODB,    // -22dB
-0.1000*INZERODB,    // -20dB
-0.1122*INZERODB,    // -19dB
-0.1259*INZERODB,    // -18dB
-0.1413*INZERODB,    // -17dB
-0.1585*INZERODB,    // -16dB
-0.1778*INZERODB,    // -15dB
-0.1995*INZERODB,    // -14dB
-0.2239*INZERODB,    // -13dB
-0.2512*INZERODB,    // -12dB
-0.2818*INZERODB,    // -11dB
-0.3162*INZERODB,    // -10dB
-0.3548*INZERODB,    // -9dB
-0.3981*INZERODB,    // -8dB
-0.4467*INZERODB,    // -7dB
-0.5012*INZERODB,    // -6dB
-0.5623*INZERODB,    // -5dB
-0.6310*INZERODB,    // -4dB
-0.7079*INZERODB,    // -3dB
-0.7943*INZERODB,    // -2dB
-0.8913*INZERODB,    // -1dB
-1.0000*INZERODB,    // 0dB
-1.1220*INZERODB,    // +1dB
-1.2589*INZERODB,    // +2dB
-1.4126*INZERODB,    // +3dB
-1.5849*INZERODB,    // +4dB
-1.7783*INZERODB     // +5dB
-};
-
 
 
 
@@ -129,27 +32,9 @@ void setup() {
 #endif
   pinMode(BUTTONGPIO, INPUT_PULLUP);
   myBtn.begin();
-  EEPROM.begin(256);
-  scrsvmode = EEPROM.read(EEPROMADDRSCRSV);
-  displmode = EEPROM.read(EEPROMADDRVUPPM);
-  colormode = EEPROM.read(EEPROMADDRCOLOR);
-  dimmer    = EEPROM.read(EEPROMADDRDIMMR);
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
-  FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
-  FastLED.setBrightness(127+dimmer);
-  setcolors();
-  updateLeds();
-  readRmsL.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
-  readRmsR.begin(INMAX, RMSWINDOW, ADC_12BIT, BLR_OFF, CNT_SCAN);
-  readRmsL.start();
-  readRmsR.start();
-  ppmFiltL.clear();
-  ppmFiltR.clear();
-  adc.setFrequency(SAMPLERATE);
-  adc.setBuffers(4, ADCBUFFER);
-  adc.begin(); 
-  delay(500);
-  findDcBias(3);
+  geteeprom();
+  begindisplay();
+  beginmeasurement();
 }
 
   
@@ -159,276 +44,36 @@ void setup() {
 
 void loop() {
   unsigned long loopnow = millis();
+  
   sampleAudio();
   actualSampleRate++;
-  FastLED.setBrightness(127+dimmer);
   
   static unsigned long looptimer;
   if (loopnow - looptimer >= 1000/UPDATEFREQ ) {  
     looptimer = loopnow;
-    refreshPPM();
     refreshRMS();
-    vuBallistics();
-    ppmBallistics();
-    if (!screensaver(SCRSAVERAUTO)) {
-      updateLeds();
+    refreshPPM();
+    vu[L] = vuBallistics(L);
+    vu[R] = vuBallistics(R);
+    ppm[L] = ppmBallistics(L);
+    ppm[R] = ppmBallistics(R);
+    if ( !screensaver(SCRSAVERAUTO, vu[L]+vu[R]) ) {
+      updateLeds(vu[L], vu[R], ppm[L], ppm[R]);
     }
-    showmodenumber();
+    showmodenumber(programmode);
+    checkbutton();
 #ifdef DEBUG
-    Serial.printf("%4d %4d", dcBiasL-2048, dcBiasR-2048 );
-    Serial.printf("%12d %5d", adcL-dcBiasL, adcR-dcBiasR ); // just random single samples
-    Serial.printf("%12d %5d %5d", rmsL, vuL, ppmL );
-    Serial.printf("%12d %5d %5d", rmsR, vuR, ppmR );
+    Serial.printf("%12d %5d", vu[L], ppm[L] );
+    Serial.printf("%12d %5d", vu[R], ppm[R] );
     Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
     Serial.printf("\t0\n");
 #endif
-    checkbutton();
     actualSampleRate=0;
   }
 }
 
 
-// -------------------------------------------------------------------------------------
 
-void sampleAudio(void) {
-  adcL = adc.read();
-  adcR = adc.read();
-  int left = constrain(abs(adcL-dcBiasL), 0, FULLSCALE);
-  int rght = constrain(abs(adcR-dcBiasR), 0, FULLSCALE);
-  readRmsL.update(left); 
-  readRmsR.update(rght);
-  if (left>maxL) {
-    if (left<PPMNOISE) { left=0; }   // Noise gate for ADC noise floor
-    ppmFiltL.add(left);
-    maxL = left;
-  }
-  if (rght>maxR) {
-    if (rght<PPMNOISE) { rght=0; }  // Noise gate for ADC noise floor
-    ppmFiltR.add(rght);
-    maxR = rght;
-  }
-}
-
-
-void refreshRMS(void) {
-  readRmsL.publish();
-  readRmsR.publish();
-  rmsL = readRmsL.rmsVal;
-  rmsR = readRmsR.rmsVal;
-}
-
-
-void refreshPPM(void) {
-  peakL = constrain((int)ppmFiltL.getAverage()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
-  peakR = constrain((int)ppmFiltR.getAverage()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
-  ppmFiltL.clear();
-  ppmFiltR.clear();
-  maxL = 0;
-  maxR = 0;
-}
-
-
-void ppmBallistics(void) {
-  #define DROPRATE 0.9085  // 0.9441 = -6dB per sec // 0.9085 = -10dB per sec // at 12Hz function call rate
-  if (peakL<(int)ppmL*DROPRATE) { ppmL = max(0, (int)ppmL*DROPRATE); }
-  else                          { ppmL = peakL; }
-  if (peakR<(int)ppmR*DROPRATE) { ppmR = max(0, (int)ppmR*DROPRATE); }
-  else                          { ppmR = peakR; }
-}
-
-
-void vuBallistics(void) {
-  float p_gain = 0.25;
-  float i_gain = 0.25;
-  int accL=0,  accR=0;
-  int errL=0,  errR=0;
-  static int posL=0, posR=0;
-  errL=rmsL-posL;
-  errR=rmsR-posR;
-  accL+=i_gain*errL;
-  accR+=i_gain*errR;
-  posL+=(int)(p_gain*errL+accL);
-  posR+=(int)(p_gain*errR+accR);
-  posL--;
-  posR--;
-  posL = constrain(posL, 0, FULLSCALE);
-  posR = constrain(posR, 0, FULLSCALE);
-  vuL = posL;
-  vuR = posR;
-}
-
-
-void findDcBias(int runs) {
-  uint32_t sumL = 0;
-  uint32_t sumR = 0;
-  delay(50);
-  for (int i=0; i<(SAMPLERATE*runs); i++ ) {  
-    sumL += adc.read();
-    sumR += adc.read();
-  }
-  dcBiasL = (int)sumL/(SAMPLERATE*runs);
-  dcBiasR = (int)sumR/(SAMPLERATE*runs);
-}
-
-
-// -------------------------------------------------------------------------------------
-
-void updateLeds(void) {
-  static int ppmDotL,  ppmDotR;
-  static int vuDotL,  vuDotR;
-
-  ppmDotL = 0;
-  while (  ppmDotL<NUMLEDS  &&  ppmL>thresholds[ppmDotL] ) {
-    ppmDotL++;
-  }
-  ppmDotL--;   // -1 (all off) and then 0 to 35
- 
-  ppmDotR = 0;
-  while (  ppmDotR<NUMLEDS  &&  ppmR>thresholds[ppmDotR] ) {
-    ppmDotR++;
-  }
-  ppmDotR--;   // -1 (all off) and then 0 to 35
-
-  vuDotL = 0;
-  while (  vuDotL<NUMLEDS  &&  vuL>thresholds[vuDotL] ) {
-    vuDotL++;
-  }
-  vuDotL--;   // -1 (all off) and then 0 to 35
- 
-  vuDotR = 0;
-  while (  vuDotR<NUMLEDS  &&  vuR>thresholds[vuDotR] ) {
-    vuDotR++;
-  }
-  vuDotR--;   // -1 (all off) and then 0 to 35
-
-
-     
-  for(int pos=0; pos<NUMLEDS; pos++) { 
-
-    switch (displmode) {
-
-      case PPM_DOT:
-        if (ppmDotL == pos) { led[LEFT][pos] = ledDOT[pos]; }
-        else                { led[LEFT][pos] = ledBAK[pos]; }
-        if (ppmDotR == pos) { led[RGHT][pos] = ledDOT[pos]; }
-        else                { led[RGHT][pos] = ledBAK[pos]; }
-        break;
-    
-      case PPM_BAR:
-        if (ppmDotL >= pos) { led[LEFT][pos] = ledBAR[pos]; }
-        else                { led[LEFT][pos] = ledBAK[pos]; }
-        if (ppmDotR >= pos) { led[RGHT][pos] = ledBAR[pos]; }
-        else                { led[RGHT][pos] = ledBAK[pos]; }
-        break;
-      
-      case VU_DOT:
-        if (vuDotL == pos)  { led[LEFT][pos] = ledDOT[pos]; }
-        else                { led[LEFT][pos] = ledBAK[pos]; }
-        if (vuDotR == pos)  { led[RGHT][pos] = ledDOT[pos]; }
-        else                { led[RGHT][pos] = ledBAK[pos]; }
-        break;
-      
-      case VU_BAR:
-        if (vuDotL >= pos)  { led[LEFT][pos] = ledBAR[pos]; }
-        else                { led[LEFT][pos] = ledBAK[pos]; }
-        if (vuDotR >= pos)  { led[RGHT][pos] = ledBAR[pos]; }
-        else                { led[RGHT][pos] = ledBAK[pos]; }
-        break;
-      
-      case PPM_DOT_AND_VU_BAR:
-        if (vuDotL >= pos)  { led[LEFT][pos] = ledBAR[pos]; }
-        else                { led[LEFT][pos] = ledBAK[pos]; }
-        if (ppmDotL == pos) { led[LEFT][pos] = ledDOT[pos]; }
-        if (vuDotR >= pos)  { led[RGHT][pos] = ledBAR[pos]; }
-        else                { led[RGHT][pos] = ledBAK[pos]; }
-        if (ppmDotR == pos) { led[RGHT][pos] = ledDOT[pos]; }
-        break;
-
-      default:
-        displmode = 0;
-    }
-  
-  }
-  
-  FastLED.show();
-
-}
-
-// -------------------------------------------------------------------------------------
-
-// CREATE DIFFERENT COLOR SETUPS
-void setcolors(void) {  
-
-  if (colormode>6) colormode = 0;
-
-  for(int pos=0; pos<NUMLEDS; pos++) { 
-    switch (colormode) {
-
-      case 0:
-        if (pos>29)      { ledBAK[pos] = CRGB::Red;    }
-        else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
-        else             { ledBAK[pos] = CRGB::Green;  }
-        ledBAR[pos] = ledBAK[pos];
-        ledDOT[pos] = CRGB::Cyan;
-        ledDOT[pos] %= 140;
-        ledBAK[pos] %= 40;
-        break;
-        
-      case 1:
-        if (pos>29)      { ledBAK[pos] = CRGB::Red;    }
-        else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
-        else             { ledBAK[pos] = CRGB::Green;  }
-        ledBAR[pos] = ledBAK[pos];
-        ledDOT[pos] = ledBAK[pos];
-        ledBAK[pos] %= 20;
-        break;
-
-      case 2:
-        if (pos>29)      { ledBAK[pos] = CRGB::Red;    }
-        else if (pos>24) { ledBAK[pos] = CRGB::Yellow; }
-        else             { ledBAK[pos] = CRGB::Green;  }
-        ledBAR[pos] = CRGB::White; 
-        ledBAR[pos] %= 50;
-        ledDOT[pos] = ledBAK[pos];
-        ledBAK[pos] %= 50;
-        break;
-
-      case 3:
-        if (pos>29)      { ledBAK[pos] = CRGB::Purple;    }
-        else if (pos>24) { ledBAK[pos] = CRGB::Teal; }
-        else             { ledBAK[pos] = CRGB::DarkGray;  }
-        ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 120;
-        ledDOT[pos] = CRGB::Red;
-        ledDOT[pos] %= 100;
-        ledBAK[pos] %= 25;
-        break;
-        
-      case 4:
-        ledBAK[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledBAR[pos] = ledBAK[pos];
-        ledBAR[pos] %= 170;
-        ledDOT[pos] = CRGB::Red;
-        ledBAK[pos] %= 25;
-        break;
-
-      case 5:
-        ledBAK[pos] = CRGB::DarkGray;
-        ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledBAR[pos] %= 170;
-        ledDOT[pos].setHue(map(pos, 0, NUMLEDS, 180, -20)); 
-        ledBAK[pos] %= 30;
-        break;
-
-      case 6:
-        ledBAK[pos] = CRGB::Black;
-        ledBAR[pos].setHue(map(pos, 0, NUMLEDS, 300, -20)); 
-        ledBAR[pos] %= 170;
-        ledDOT[pos] = CRGB::White;
-        break;
-    }
-  }
-}
 
 
 // -------------------------------------------------------------------------------------
@@ -440,7 +85,7 @@ void checkbutton(void) {
   
   static unsigned long buttontimeout;
   if (  programmode>0  &&  loopnow-buttontimeout>=PROGRAMMODETIMEOUT*1000  ) {  
-    flashleds(CRGB::DarkGrey);
+    flashleds(0x333333);
     programmode = 0;
     delay(200);
   }
@@ -476,166 +121,15 @@ void checkbutton(void) {
     buttontimeout = loopnow;
     programmode++;
     if(programmode) {
-      showmodenumber();
+      showmodenumber(programmode);
       screensaver(SCRSAVEREND);  // just one single call to end screensaver if active
     }
     if(programmode>1) {
-      adc.end();  
-      EEPROM.write(EEPROMADDRVUPPM, displmode);
-      EEPROM.write(EEPROMADDRCOLOR, colormode);
-      EEPROM.write(EEPROMADDRSCRSV, scrsvmode);
-      EEPROM.write(EEPROMADDRDIMMR, dimmer);
-      EEPROM.commit();
-      adc.setFrequency(SAMPLERATE);
-      adc.setBuffers(4, ADCBUFFER);
-      adc.begin(); 
+      stopadc();
+      savetoeeprom();
+      startadc();
       findDcBias(3);
     }
     if (programmode>MAXPROGRAMMODES) programmode = 0;
   }
 }
-
-
-void changedisplmode(void) {
-  displmode++;
-}
-
-void changecolor(void) {
-  colormode++;
-  setcolors();
-}
-
-
-void changescrsv(void) {
-  scrsvmode++;
-  for (int i=0; i<150; i++) {
-    screensaver(SCRSAVERDEMO);
-  }
-}
-
-
-void changedimmer(void) {
-  dimmer -= 20;
-  if(dimmer<-100) dimmer=100;  
-}
-
-
-void showmodenumber(void) {
-  #define LEDSTEPS 5
-  if(!programmode) { return; }
-  for (int pos=0; pos<=(MAXPROGRAMMODES+LEDSTEPS)*LEDSTEPS; pos++) {
-    if ( programmode-1 == (int)((pos-1)/LEDSTEPS) ) { led[RGHT][pos] = CRGB::White; }
-  }
-  FastLED.show();
-}
-
-
-// -------------------------------------------------------------------------------------
-
-bool screensaver(int demomode) {
-  unsigned long loopnow = millis();
-  static unsigned long looptimer;
-  static bool wait = false;
-  static bool initFade = true;
-
-
-  if ( demomode==SCRSAVEREND ) {
-    looptimer = loopnow;
-    return false;
-  }
-
-  if ( demomode==SCRSAVERDEMO ) {
-    delay(15);   // make led update frequency similar to live rate
-    initFade = false;
-  }
-  
-  if ( demomode==SCRSAVERAUTO  &&  (vuL+vuR>10) ) {
-    wait = false;
-    initFade = true;
-    return false;
-  }
-  else if (!wait) {
-    wait = true;
-    looptimer = loopnow;
-    return false;
-  }
-  else if ( demomode==SCRSAVERDEMO  ||  (loopnow - looptimer >= SCRSAVERTIMEOUT*60*1000) ) {  
-
-    switch (scrsvmode) {
-      
-      case 0:
-        return false;
-        
-      case 1:
-        scrsaverRainbow(initFade);
-        break;
-        
-      default:      
-        scrsvmode = 0;
-        return false;
-    }
-    initFade = false;
-    return true;
-  }  
-  return false;
-}
-
-
-void fadetoblack(void) {
-  for(int x=0; x<50; x++) {
-    for(int i=0; i<NUMLEDS; i++) {
-      led[LEFT][i].fadeToBlackBy(1);
-      led[RGHT][i].fadeToBlackBy(1);
-    }
-    FastLED.show();
-    delay(65);
-  }
-}
-
-
-void scrsaverRainbow(bool initFade) {
-  static uint8_t color = 0;
-  static uint8_t brghtn;
-  
-  if (initFade) { 
-    fadetoblack();    
-    brghtn=0; 
-  }
-  else {
-    brghtn=50; 
-  }
-  const float rainbowSpread = 1.7;
-  for(int i=0; i<NUMLEDS; i++) {
-    led[LEFT][i].setHue(color+(int)(i*rainbowSpread));
-    led[LEFT][i] %= brghtn;
-    led[RGHT][i].setHue(color+(int)(i*rainbowSpread)+(int)(NUMLEDS*rainbowSpread));
-    led[RGHT][i] %= brghtn;
-  }
-  FastLED.show();
-  delay(3);
-  brghtn++;
-  brghtn = constrain(brghtn, 0, 50);  color++;
-}
-
-
-// -------------------------------------------------------------------------------------
-
-void flashleds(long color) {
-  for (int i=0; i<NUMLEDS; i++) {
-    led[LEFT][i] = color;
-    led[LEFT][i] %= 50;
-    led[RGHT][i] = color;
-    led[RGHT][i] %= 50;
-  }
-  FastLED.show();
-  delay(40);
-  for (int i=0; i<NUMLEDS; i++) {
-    led[LEFT][i] = 0x000000;
-    led[RGHT][i] = 0x000000;
-  }
-  FastLED.show();
-  delay(40);
-}
-
-
-// --------- THE END -------------------------------------------------------------------
