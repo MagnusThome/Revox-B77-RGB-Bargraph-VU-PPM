@@ -271,7 +271,7 @@ void changedimmer(void) {
   if (up) { dimmer = dimmer+15; }
   else    { dimmer = dimmer-15; }
   if(dimmer<-100) { dimmer=-100; up = true; }
-  if(dimmer>120)  { dimmer=120;  up = false;}
+  if(dimmer>110)  { dimmer=110;  up = false;}
 }
 
 
