@@ -3,7 +3,6 @@
 #include "measurement.h"
 #include "display.h"
 
-#define DEBUG
 
 #define L 0
 #define R 1
@@ -24,10 +23,10 @@ int actualSampleRate;
 // -------------------------------------------------------------------------------------
 
 void setup() {
-  delay(500);
+  delay(200);
 #ifdef DEBUG
   Serial.begin(115200);
-  delay(500);
+  delay(200);
   Serial.println("Boot VU meter");
 #endif
   pinMode(BUTTONGPIO, INPUT_PULLUP);

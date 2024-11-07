@@ -31,12 +31,12 @@ Rms2 readRmsR;
 RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
 RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
 
-uint8_t adcin[NUMCHANNELS];
-uint8_t dcBias[NUMCHANNELS];
-uint8_t maxval[NUMCHANNELS];
-uint8_t rms[NUMCHANNELS];
-uint8_t peak[NUMCHANNELS];
-uint8_t prevpeak[NUMCHANNELS];
+int adcIn[NUMCHANNELS];
+int dcBias[NUMCHANNELS];
+int maxVal[NUMCHANNELS] = {0,0};
+int rms[NUMCHANNELS];
+int peak[NUMCHANNELS];
+int prevPeak[NUMCHANNELS];
 
 
 
@@ -68,21 +68,21 @@ void stopadc(void) {
 
 
 void sampleAudio(void) {
-  adcin[L] = adc.read();
-  adcin[R] = adc.read();
-  uint8_t left = constrain(abs(adcin[L]-dcBias[L]), 0, FULLSCALE);
-  uint8_t rght = constrain(abs(adcin[R]-dcBias[R]), 0, FULLSCALE);
+  adcIn[L] = adc.read();
+  adcIn[R] = adc.read();
+  int left = constrain(abs(adcIn[L]-dcBias[L]), 0, FULLSCALE);
+  int rght = constrain(abs(adcIn[R]-dcBias[R]), 0, FULLSCALE);
   readRmsL.update(left); 
   readRmsR.update(rght);
-  if (left>maxval[L]) {
+  if (left>maxVal[L]) {
     if (left<PPMNOISE) { left=0; }   // Noise gate for ADC noise floor
     ppmFiltL.add(left);
-    maxval[L] = left;
+    maxVal[L] = left;
   }
-  if (rght>maxval[R]) {
+  if (rght>maxVal[R]) {
     if (rght<PPMNOISE) { rght=0; }  // Noise gate for ADC noise floor
     ppmFiltR.add(rght);
-    maxval[R] = rght;
+    maxVal[R] = rght;
   }
 }
 
@@ -100,29 +100,33 @@ void refreshPPM(void) {
   peak[R] = constrain((int)ppmFiltR.getAverage()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
   ppmFiltL.clear();
   ppmFiltR.clear();
-  maxval[L] = 0;
-  maxval[R] = 0;
+  maxVal[L] = 0;
+  maxVal[R] = 0;
 }
 
 
-uint8_t ppmBallistics(uint8_t ch) {
+int ppmBallistics(uint8_t ch) {
   #define DROPRATE 0.9085  // 0.9441 = -6dB per sec // 0.9085 = -10dB per sec // at 12Hz function call rate
-  if (peak[ch]<(int)prevpeak[ch]*DROPRATE) { 
-    prevpeak[ch] = max(0, (uint8_t)prevpeak[ch]*DROPRATE); 
+  if (peak[ch]<(int)prevPeak[ch]*DROPRATE) { 
+    prevPeak[ch] = max(0, (int)prevPeak[ch]*DROPRATE); 
   }
   else { 
-    prevpeak[ch] = peak[ch]; 
+    prevPeak[ch] = peak[ch]; 
   }
-  return prevpeak[ch];
+#ifdef DEBUG
+  Serial.printf("%12d", dcBias[ch]-(FULLSCALE/2) );
+  Serial.printf(" %5d", adcIn[ch]-dcBias[ch] );
+#endif
+  return prevPeak[ch];
 }
 
 
-uint8_t vuBallistics(uint8_t ch) {
+int vuBallistics(uint8_t ch) {
   float p_gain = 0.25;
   float i_gain = 0.25;
+  static int pos[NUMCHANNELS] = {0,0};
   int acc[NUMCHANNELS] = {0,0};
   int err[NUMCHANNELS] = {0,0};
-  static int pos[NUMCHANNELS] = {0,0};
   
   err[ch] = rms[ch]-pos[ch];
   acc[ch] += i_gain*err[ch];
@@ -133,13 +137,14 @@ uint8_t vuBallistics(uint8_t ch) {
 }
 
 
-void findDcBias(int runs) {
-  uint32_t sum[NUMCHANNELS] = {0,0};
+void findDcBias(uint8_t runs) {
+  uint32_t sumL = 0;
+  uint32_t sumR = 0;
   delay(50);
-  for (int i=0; i<(SAMPLERATE*runs); i++ ) {  
-    sum[L] += adc.read();
-    sum[R] += adc.read();
+  for (uint32_t i=0; i<(SAMPLERATE*runs); i++ ) {  
+    sumL += adc.read();
+    sumR += adc.read();
   }
-  dcBias[L] = (int)sum[L]/(SAMPLERATE*runs);
-  dcBias[R] = (int)sum[R]/(SAMPLERATE*runs);
+  dcBias[L] = (int)sumL/(SAMPLERATE*runs);
+  dcBias[R] = (int)sumR/(SAMPLERATE*runs);
 }
