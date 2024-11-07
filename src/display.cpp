@@ -267,8 +267,11 @@ void changescrsv(void) {
 
 
 void changedimmer(void) {
-  dimmer -= 20;
-  if(dimmer<-100) dimmer=100;  
+  static bool up = false;
+  if (up) { dimmer += 20; }
+  else    { dimmer -= 20; }
+  if(dimmer<-100) { dimmer=-100; up = false; }
+  if(dimmer>100)  { dimmer=100;  up = true;  }
 }
 
 
