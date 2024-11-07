@@ -87,7 +87,7 @@ void begindisplay(void) {
 }
 
 
-void updateLeds(uint8_t vuL, uint8_t vuR, uint8_t ppmL, uint8_t ppmR) {
+void updateLeds(int vuL, int vuR, int ppmL, int ppmR) {
   static int ppmDotL,  ppmDotR;
   static int vuDotL,  vuDotR;
 

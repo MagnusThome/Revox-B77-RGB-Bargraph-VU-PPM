@@ -4,12 +4,8 @@
 #include <Arduino.h>
 
 
-#define DEBUG
-
-
 #define UPDATEFREQ   12
 #define NUMCHANNELS  2
-
 
 void beginmeasurement(void);
 void startadc(void);
@@ -20,6 +16,7 @@ void refreshRMS(void);
 void refreshPPM(void);
 int ppmBallistics(uint8_t channel);
 int vuBallistics(uint8_t channel);
+void debugMeasurement(void);
 
 
 #endif

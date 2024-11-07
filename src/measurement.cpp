@@ -105,6 +105,14 @@ void refreshPPM(void) {
 }
 
 
+void debugMeasurement(void) {
+  Serial.printf("%4d %5d", dcBias[L]-(INMAX/2), dcBias[R]-(INMAX/2) );
+  Serial.printf("%12d %5d", adcIn[L]-dcBias[L], adcIn[R]-dcBias[R] ); // just random single samples
+  Serial.printf("%12d %5d", peak[L],   peak[R] );
+  Serial.printf("%12d %5d", rms[L],    rms[R] );
+}
+
+
 int ppmBallistics(uint8_t ch) {
   #define DROPRATE 0.9085  // 0.9441 = -6dB per sec // 0.9085 = -10dB per sec // at 12Hz function call rate
   if (peak[ch]<(int)prevPeak[ch]*DROPRATE) { 
@@ -113,10 +121,6 @@ int ppmBallistics(uint8_t ch) {
   else { 
     prevPeak[ch] = peak[ch]; 
   }
-#ifdef DEBUG
-  Serial.printf("%12d", dcBias[ch]-(FULLSCALE/2) );
-  Serial.printf(" %5d", adcIn[ch]-dcBias[ch] );
-#endif
   return prevPeak[ch];
 }
 

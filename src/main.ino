@@ -3,12 +3,13 @@
 #include "measurement.h"
 #include "display.h"
 
+#define DEBUG
 
 #define L 0
 #define R 1
 
-uint8_t vu[NUMCHANNELS];
-uint8_t ppm[NUMCHANNELS];
+int vu[NUMCHANNELS];
+int ppm[NUMCHANNELS];
 
 #define BUTTONGPIO 8
 #define LONG_PRESS 500
@@ -62,8 +63,9 @@ void loop() {
     showmodenumber(programmode);
     checkbutton();
 #ifdef DEBUG
-    Serial.printf("%12d %5d", vu[L], ppm[L] );
-    Serial.printf("%12d %5d", vu[R], ppm[R] );
+    debugMeasurement();
+    Serial.printf("%12d %5d", vu[L], vu[R] );
+    Serial.printf("%12d %5d", ppm[L], ppm[R] );
     Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
     Serial.printf("\t0\n");
 #endif
