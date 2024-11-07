@@ -62,7 +62,7 @@ void loop() {
     }
     showmodenumber(programmode);
     checkbutton();
-#ifdef DEBUG
+#ifdef DEBUG2
     debugMeasurement();
     Serial.printf("%12d %5d", vu[L], vu[R] );
     Serial.printf("%12d %5d", ppm[L], ppm[R] );

@@ -33,7 +33,7 @@ CRGB ledBAR[NUMLEDS];
 
 uint8_t displmode;
 uint8_t colormode;
-int8_t dimmer;
+int dimmer;
 int scrsvmode;
 
 float thresholds[NUMLEDS] = {
@@ -268,10 +268,10 @@ void changescrsv(void) {
 
 void changedimmer(void) {
   static bool up = false;
-  if (up) { dimmer += 20; }
-  else    { dimmer -= 20; }
-  if(dimmer<-100) { dimmer=-100; up = false; }
-  if(dimmer>100)  { dimmer=100;  up = true;  }
+  if (up) { dimmer = dimmer+15; }
+  else    { dimmer = dimmer-15; }
+  if(dimmer<-100) { dimmer=-100; up = true; }
+  if(dimmer>120)  { dimmer=120;  up = false;}
 }
 
 
