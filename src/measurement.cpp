@@ -13,11 +13,11 @@
 #define ADCBUFFER       64
 #define SAMPLERATE      48000
 #define RMSWINDOW       SAMPLERATE/UPDATEFREQ
-#define PPMFILTERBUF    10
+#define PPMFILTERBUF    16
+#define PPMNOISE        16  // ADC PPM BIAS noise floor   
 
 #define INMAX           4096
 #define FULLSCALE       INMAX/2
-#define PPMNOISE        20    // ADC PPM BIAS noise floor   
 #define L 0
 #define R 1
 
@@ -96,8 +96,8 @@ void refreshRMS(void) {
 
 
 void refreshPPM(void) {
-  peak[L] = constrain((int)ppmFiltL.getAverage()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
-  peak[R] = constrain((int)ppmFiltR.getAverage()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
+  peak[L] = constrain((int)ppmFiltL.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
+  peak[R] = constrain((int)ppmFiltR.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
   ppmFiltL.clear();
   ppmFiltR.clear();
   maxVal[L] = 0;
@@ -108,8 +108,8 @@ void refreshPPM(void) {
 void debugMeasurement(void) {
   Serial.printf("%4d %5d", dcBias[L]-(INMAX/2), dcBias[R]-(INMAX/2) );
   Serial.printf("%12d %5d", adcIn[L]-dcBias[L], adcIn[R]-dcBias[R] ); // just random single samples
-  Serial.printf("%12d %5d", peak[L],   peak[R] );
-  Serial.printf("%12d %5d", rms[L],    rms[R] );
+  Serial.printf("%12d %5d", peak[L], peak[R] );
+  Serial.printf("%12d %5d", rms[L], rms[R] );
 }
 
 

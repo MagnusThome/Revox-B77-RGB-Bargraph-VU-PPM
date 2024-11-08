@@ -24,8 +24,8 @@ int actualSampleRate;
 // -------------------------------------------------------------------------------------
 
 void setup() {
-  delay(200);
 #ifdef DEBUG
+  delay(200);
   Serial.begin(115200);
   delay(200);
   Serial.println("Boot VU meter");
@@ -62,11 +62,11 @@ void loop() {
     }
     showmodenumber(programmode);
     checkbutton();
-#ifdef DEBUG2
+#ifdef DEBUG
     debugMeasurement();
-    Serial.printf("%12d %5d", vu[L], vu[R] );
-    Serial.printf("%12d %5d", ppm[L], ppm[R] );
-    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
+//    Serial.printf("%12d %5d", vu[L], vu[R] );
+//    Serial.printf("%12d %5d", ppm[L], ppm[R] );
+//    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
     Serial.printf("\t0\n");
 #endif
     actualSampleRate=0;
