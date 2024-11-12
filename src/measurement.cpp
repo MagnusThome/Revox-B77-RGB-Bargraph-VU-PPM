@@ -7,8 +7,6 @@
 
 #define INPUTGPIO_L     27
 #define INPUTGPIO_R     28
-#define OVRINPUTGPIO_L  2
-#define OVRINPUTGPIO_R  3
 
 #define ADCBUFFER       64
 #define SAMPLERATE      48000

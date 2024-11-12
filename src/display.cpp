@@ -1,6 +1,5 @@
 #include "display.h"
 #include "measurement.h"
-#include <FastLED.h>
 #include <EEPROM.h>
 
 

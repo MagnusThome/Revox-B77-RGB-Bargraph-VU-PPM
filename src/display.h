@@ -2,6 +2,7 @@
 #define Display_H_
 
 #include <Arduino.h>
+#include <FastLED.h>
 
 #define SCRSAVERTIMEOUT 10 // minutes
 #define SCRSAVERAUTO 0

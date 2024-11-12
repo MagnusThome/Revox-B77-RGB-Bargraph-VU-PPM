@@ -2,6 +2,7 @@
 #include <JC_Button.h>
 #include "measurement.h"
 #include "display.h"
+#include "overdrivelamp.h"
 
 #define DEBUG
 
@@ -34,6 +35,7 @@ void setup() {
   myBtn.begin();
   geteeprom();
   begindisplay();
+  beginoverdrivelamp();
   beginmeasurement();
 }
 
@@ -60,13 +62,16 @@ void loop() {
     if ( !screensaver(SCRSAVERAUTO, vu[L]+vu[R]) ) {
       updateLeds(vu[L], vu[R], ppm[L], ppm[R]);
     }
+    if (refreshoverdrivelamp(L) || refreshoverdrivelamp(R)) {
+      // do something?
+    }
     showmodenumber(programmode);
     checkbutton();
 #ifdef DEBUG
     debugMeasurement();
-//    Serial.printf("%12d %5d", vu[L], vu[R] );
-//    Serial.printf("%12d %5d", ppm[L], ppm[R] );
-//    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
+    Serial.printf("%12d %5d", vu[L], vu[R] );
+    Serial.printf("%12d %5d", ppm[L], ppm[R] );
+    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
     Serial.printf("\t0\n");
 #endif
     actualSampleRate=0;
