@@ -3,11 +3,11 @@
 #include <EEPROM.h>
 
 
-#define LEDBARGPIO_L    15
-#define LEDBARGPIO_R    14
-#define NUMLEDS      36
+#define LEDBARGPIO_L  15
+#define LEDBARGPIO_R  14
+#define NUMLEDS       36
 
-#define NUMCHANNELS  2
+#define NUMCHANNELS   2
 #define LEFT 0
 #define RGHT 1
 

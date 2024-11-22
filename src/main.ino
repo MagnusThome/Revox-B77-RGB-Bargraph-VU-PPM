@@ -6,23 +6,17 @@
 
 #define DEBUG
 
+#define NUMCHANNELS 2
 #define L 0
 #define R 1
-
-int vu[NUMCHANNELS];
-int ppm[NUMCHANNELS];
 
 #define BUTTONGPIO 8
 #define LONG_PRESS 500
 #define PROGRAMMODETIMEOUT 15 // seconds
 Button myBtn(BUTTONGPIO);
 uint8_t programmode = 0;
+int level[3][NUMCHANNELS];
 
-int actualSampleRate;
-
-
-
-// -------------------------------------------------------------------------------------
 
 void setup() {
 #ifdef DEBUG
@@ -35,54 +29,45 @@ void setup() {
   myBtn.begin();
   geteeprom();
   begindisplay();
+  startadc();
   beginoverdrivelamp();
-  beginmeasurement();
 }
 
-  
-
-
-// -------------------------------------------------------------------------------------
 
 void loop() {
   unsigned long loopnow = millis();
-  
-  sampleAudio();
-  actualSampleRate++;
-  
   static unsigned long looptimer;
   if (loopnow - looptimer >= 1000/UPDATEFREQ ) {  
     looptimer = loopnow;
+    sampleAudio();
+    refreshAVG();
     refreshRMS();
     refreshPPM();
-    vu[L] = vuBallistics(L);
-    vu[R] = vuBallistics(R);
-    ppm[L] = ppmBallistics(L);
-    ppm[R] = ppmBallistics(R);
-    if ( !screensaver(SCRSAVERAUTO, vu[L]+vu[R]) ) {
-      updateLeds(vu[L], vu[R], ppm[L], ppm[R]);
+    for (uint8_t ch=0;ch<NUMCHANNELS;ch++) {
+      level[AVG][ch] = avgBallistics(ch);
+      level[RMS][ch] = rmsBallistics(ch);
+      level[PPM][ch] = ppmBallistics(ch);
     }
-    if (refreshoverdrivelamp(L) || refreshoverdrivelamp(R)) {
-      // do something?
+    //if (detectOverdrive(L) || detectOverdrive(R)) { do something }
+    //else { or something else }
+	
+    if ( !screensaver(SCRSAVERAUTO, level[RMS][L]+level[RMS][R]) ) {
+      updateLeds(level[RMS][L], level[RMS][R], level[PPM][L], level[PPM][R]);
     }
-    showmodenumber(programmode);
+	
     checkbutton();
+    showmodenumber(programmode);
 #ifdef DEBUG
     debugMeasurement();
-    Serial.printf("%12d %5d", vu[L], vu[R] );
-    Serial.printf("%12d %5d", ppm[L], ppm[R] );
-    Serial.printf("%14.3f kHz", (float)actualSampleRate*UPDATEFREQ/2000 );
+    Serial.printf("    AVG: %4d %4d", level[AVG][L], level[AVG][R] );
+    Serial.printf("    RMS: %4d %4d", level[RMS][L], level[RMS][R] );
+    Serial.printf("    PPM: %4d %4d", level[PPM][L], level[PPM][R] );
+    Serial.printf("    %2ld ms", (millis()-loopnow) );
     Serial.printf("\t0\n");
 #endif
-    actualSampleRate=0;
   }
 }
 
-
-
-
-
-// -------------------------------------------------------------------------------------
 
 void checkbutton(void) {
   static bool prevWasLong = false;

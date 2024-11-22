@@ -8,6 +8,9 @@
 #define SCRSAVERAUTO 0
 #define SCRSAVERDEMO 1
 #define SCRSAVEREND  2
+#define AVG 0
+#define RMS 1
+#define PPM 2
 
 
 void begindisplay(void);

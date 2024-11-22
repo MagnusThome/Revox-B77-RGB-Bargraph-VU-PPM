@@ -5,7 +5,7 @@
 
 
 void beginoverdrivelamp(void);
-bool refreshoverdrivelamp(uint8_t ch);
+bool detectOverdrive(uint8_t ch);
 
 
 #endif
