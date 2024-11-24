@@ -57,6 +57,8 @@ void startadc(void) {
   adc.setFrequency(SAMPLERATE);
   adc.setBuffers(4, ADCBUFFER);
   adc.begin(); 
+  delay(500);
+  sampleAudio();
   findDcBias(3);
 }
 
