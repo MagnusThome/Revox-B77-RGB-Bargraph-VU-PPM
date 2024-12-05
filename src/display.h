@@ -14,7 +14,7 @@
 
 
 void begindisplay(void);
-void updateLeds(int vuL, int vuR, int ppmL, int ppmR);
+void updateLeds(float vuL, float vuR, float ppmL, float ppmR);
 void setcolors(void);  
 
 void changedisplmode(void);
@@ -23,7 +23,7 @@ void changescrsv(void);
 void changedimmer(void);
 void showmodenumber(uint8_t programmode);
 
-bool screensaver(uint8_t demomode, uint8_t audiolevel=0);
+bool screensaver(uint8_t demomode, float audiolevel=0);
 void fadetoblack(void);
 void scrsaverRainbow(bool initFade);
 void flashleds(long color);

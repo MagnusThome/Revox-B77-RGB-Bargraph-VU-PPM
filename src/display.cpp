@@ -35,7 +35,49 @@ uint8_t colormode;
 int dimmer;
 int scrsvmode;
 
-float thresholds[NUMLEDS] = {
+float thresholdsrevox[NUMLEDS] = {  // manually set steps to compensate for the unlinear rectification in the Revox.
+                                    // From -40dB up to around -32dB the precision is pretty bad (which can also be seen in channel to channel diferences). 
+                                    // This is due to very small errors in finding the dc bias offsets that affects these low levels
+                                    // but also ADC noise. So these particular values are rough estimates
+0.9,    // -40dB  
+1.6,    // -38dB
+2.6,    // -36dB
+4.2,    // -34dB
+6.5,    // -32dB
+9.5,    // -30dB 
+13,     // -28dB
+19,     // -26dB
+26,     // -24dB
+47,     // -22dB
+63,     // -20dB
+68,     // -19dB
+77,     // -18dB
+89,     // -17dB
+102,    // -16dB
+117,    // -15dB
+135,    // -14dB
+155,    // -13dB
+176,    // -12dB
+199,    // -11dB
+226,    // -10dB
+258,    // -9dB
+292,    // -8dB
+332,    // -7dB
+375,    // -6dB
+422,    // -5dB
+476,    // -4dB
+538,    // -3dB
+609,    // -2dB
+687,    // -1dB
+775,    // 0dB
+875,    // +1dB
+986,    // +2dB
+1106,   // +3dB
+1242,   // +4dB
+1390    // +5dB
+};
+
+float thresholds[NUMLEDS] = {    // true dB scale, can be used instead of the recalibrated above if you connect the inputs to somewhere in the clean audio chain and NOT the Revox's rectifier
 0.0100*INZERODB,    // -40dB
 0.0126*INZERODB,    // -38dB
 0.0158*INZERODB,    // -36dB
@@ -75,8 +117,6 @@ float thresholds[NUMLEDS] = {
 };
 
 
-
-
 void begindisplay(void) {
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_L>(led[LEFT], NUMLEDS);
   FastLED.addLeds<NEOPIXEL, LEDBARGPIO_R>(led[RGHT], NUMLEDS);
@@ -86,32 +126,32 @@ void begindisplay(void) {
 }
 
 
-void updateLeds(int vuL, int vuR, int ppmL, int ppmR) {
+void updateLeds(float vuL, float vuR, float ppmL, float ppmR) {
   static int ppmDotL,  ppmDotR;
   static int vuDotL,  vuDotR;
 
   FastLED.setBrightness(127+dimmer);
 
   ppmDotL = 0;
-  while (  ppmDotL<NUMLEDS  &&  ppmL>thresholds[ppmDotL] ) {
+  while (  ppmDotL<NUMLEDS  &&  ppmL>thresholdsrevox[ppmDotL] ) {
     ppmDotL++;
   }
   ppmDotL--;   // -1 (all off) and then 0 to 35
  
   ppmDotR = 0;
-  while (  ppmDotR<NUMLEDS  &&  ppmR>thresholds[ppmDotR] ) {
+  while (  ppmDotR<NUMLEDS  &&  ppmR>thresholdsrevox[ppmDotR] ) {
     ppmDotR++;
   }
   ppmDotR--;   // -1 (all off) and then 0 to 35
 
   vuDotL = 0;
-  while (  vuDotL<NUMLEDS  &&  vuL>thresholds[vuDotL] ) {
+  while (  vuDotL<NUMLEDS  &&  vuL>thresholdsrevox[vuDotL] ) {
     vuDotL++;
   }
   vuDotL--;   // -1 (all off) and then 0 to 35
  
   vuDotR = 0;
-  while (  vuDotR<NUMLEDS  &&  vuR>thresholds[vuDotR] ) {
+  while (  vuDotR<NUMLEDS  &&  vuR>thresholdsrevox[vuDotR] ) {
     vuDotR++;
   }
   vuDotR--;   // -1 (all off) and then 0 to 35
@@ -304,7 +344,7 @@ void savetoeeprom(void) {
 
 // -------------------------------------------------------------------------------------
 
-bool screensaver(uint8_t demomode, uint8_t audiolevel) {
+bool screensaver(uint8_t demomode, float audiolevel) {
   unsigned long loopnow = millis();
   static unsigned long looptimer;
   static bool wait = false;
@@ -321,7 +361,7 @@ bool screensaver(uint8_t demomode, uint8_t audiolevel) {
     initFade = false;
   }
   
-  if ( demomode==SCRSAVERAUTO  &&  (audiolevel>10) ) {
+  if ( demomode==SCRSAVERAUTO  &&  (audiolevel>1.0) ) {
     wait = false;
     initFade = true;
     return false;

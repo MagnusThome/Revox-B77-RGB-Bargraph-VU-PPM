@@ -15,7 +15,7 @@
 #define PROGRAMMODETIMEOUT 15 // seconds
 Button myBtn(BUTTONGPIO);
 uint8_t programmode = 0;
-int level[3][NUMCHANNELS];
+float level[3][NUMCHANNELS];
 
 
 void setup() {
@@ -29,8 +29,9 @@ void setup() {
   myBtn.begin();
   geteeprom();
   begindisplay();
-  startadc();
   beginoverdrivelamp();
+  startadc();
+  findDcBias(1);
 }
 
 
@@ -44,10 +45,10 @@ void loop() {
     refreshRMS();
     refreshPPM();
     for (uint8_t ch=0;ch<NUMCHANNELS;ch++) {
-      level[AVG][ch] = avgBallistics(ch);
+      level[AVG][ch] = avgBallistics(ch)*1.11074;
       level[RMS][ch] = rmsBallistics(ch);
       level[PPM][ch] = ppmBallistics(ch);
-    }
+     }
     //if (detectOverdrive(L) || detectOverdrive(R)) { do something }
     //else { or something else }
 	
@@ -59,10 +60,10 @@ void loop() {
     showmodenumber(programmode);
 #ifdef DEBUG
     debugMeasurement();
-    Serial.printf("    AVG: %4d %4d", level[AVG][L], level[AVG][R] );
-    Serial.printf("    RMS: %4d %4d", level[RMS][L], level[RMS][R] );
-    Serial.printf("    PPM: %4d %4d", level[PPM][L], level[PPM][R] );
-    Serial.printf("    %2ld ms", (millis()-loopnow) );
+    Serial.printf("    AVG: %7.1f %7.1f", level[AVG][L], level[AVG][R] );
+    Serial.printf("    RMS: %7.1f %7.1f", level[RMS][L], level[RMS][R] );
+    Serial.printf("    PPM: %7.1f %7.1f", level[PPM][L], level[PPM][R] );
+    //Serial.printf("    %2ld ms", (millis()-loopnow) );
     Serial.printf("\t0\n");
 #endif
   }
@@ -110,6 +111,7 @@ void checkbutton(void) {
   if (myBtn.pressedFor(LONG_PRESS) && !prevWasLong) {
     prevWasLong = true;
     buttontimeout = loopnow;
+    showmodenumber(programmode);
     programmode++;
     if(programmode) {
       showmodenumber(programmode);
@@ -119,7 +121,7 @@ void checkbutton(void) {
       stopadc();
       savetoeeprom();
       startadc();
-      findDcBias(3);
+      findDcBias();
     }
     if (programmode>MAXPROGRAMMODES) programmode = 0;
   }

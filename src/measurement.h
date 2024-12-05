@@ -9,14 +9,14 @@
 
 void startadc(void);
 void stopadc(void);
-void findDcBias(uint8_t runs);
+void findDcBias(uint8_t flushruns = 0);
 void sampleAudio(void);
 void refreshAVG(void);
 void refreshRMS(void);
 void refreshPPM(void);
-int avgBallistics(uint8_t ch);
-int rmsBallistics(uint8_t ch);
-int ppmBallistics(uint8_t ch);
+float avgBallistics(uint8_t ch);
+float rmsBallistics(uint8_t ch);
+float ppmBallistics(uint8_t ch);
 void debugMeasurement(void);
 
 
