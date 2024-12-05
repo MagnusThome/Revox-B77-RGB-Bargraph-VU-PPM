@@ -32,7 +32,7 @@ RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
 int adcIn[NUMCHANNELS];
 int dcBias[NUMCHANNELS];
 
-long avgSum[NUMCHANNELS] = {0,0};
+int64_t avgSum[NUMCHANNELS] = {0,0};
 int avgCntr = 0;
 float avg[NUMCHANNELS];
 
@@ -73,12 +73,12 @@ void sampleAudio(void) {
     int left = constrain(abs(adcIn[L]-dcBias[L]), 0, FULLSCALE);
     int rght = constrain(abs(adcIn[R]-dcBias[R]), 0, FULLSCALE);
 
-    avgSum[L] += left;
-    avgSum[R] += rght;
+    avgSum[L] += (int64_t)left;
+    avgSum[R] += (int64_t)rght;
     avgCntr++;
 
-    rmsSum[L] += left*left;
-    rmsSum[R] += rght*rght;
+    rmsSum[L] += (int64_t)(left*left);
+    rmsSum[R] += (int64_t)(rght*rght);
     rmsCntr++;
 
     if (left>maxVal[L]) {
@@ -115,10 +115,17 @@ void refreshRMS(void) {
 
 
 void refreshPPM(void) {
-  peak[L] = constrain((int)ppmFiltL.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
-  peak[R] = constrain((int)ppmFiltR.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
-  ppmFiltL.clear();
-  ppmFiltR.clear();
+  #define USEPPMFILTER 1
+  if(USEPPMFILTER) {
+    peak[L] = constrain((int)ppmFiltL.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
+    peak[R] = constrain((int)ppmFiltR.getMedian()*0.7079, 0, FULLSCALE);   // Quasi PPM at -3dB
+    ppmFiltL.clear();
+    ppmFiltR.clear();
+  }
+  else {
+    peak[L] = maxVal[L];
+    peak[R] = maxVal[R];
+  }
   maxVal[L] = 0;
   maxVal[R] = 0;
 }
@@ -170,7 +177,8 @@ float ppmBallistics(uint8_t ch) {
 
 void findDcBias(uint8_t flushruns) {
   uint8_t runs = 1 + flushruns;
-  uint32_t sumL, sumR;
+  uint32_t sumL = 0;
+  uint32_t sumR = 0;
   for (uint8_t i=0; i<runs; i++ ) {  
     sumL = 0;
     sumR = 0;
