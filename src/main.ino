@@ -45,7 +45,7 @@ void loop() {
     refreshRMS();
     refreshPPM();
     for (uint8_t ch=0;ch<NUMCHANNELS;ch++) {
-      level[AVG][ch] = avgBallistics(ch)*1.11074;
+      level[AVG][ch] = avgBallistics(ch);
       level[RMS][ch] = rmsBallistics(ch);
       level[PPM][ch] = ppmBallistics(ch);
      }
@@ -59,12 +59,11 @@ void loop() {
     checkbutton();
     showmodenumber(programmode);
 #ifdef DEBUG
-    debugMeasurement();
-    Serial.printf("    AVG: %7.1f %7.1f", level[AVG][L], level[AVG][R] );
-    Serial.printf("    RMS: %7.1f %7.1f", level[RMS][L], level[RMS][R] );
-    Serial.printf("    PPM: %7.1f %7.1f", level[PPM][L], level[PPM][R] );
+    //debugMeasurement();
+    Serial.printf("   %6.0f %6.0f %6.0f", level[AVG][L], level[RMS][L], level[PPM][L] );
+    Serial.printf("   %6.0f %6.0f %6.0f", level[AVG][R], level[RMS][R], level[PPM][R] );
     //Serial.printf("    %2ld ms", (millis()-loopnow) );
-    Serial.printf("\t0\n");
+    Serial.printf("\n0");
 #endif
   }
 }
