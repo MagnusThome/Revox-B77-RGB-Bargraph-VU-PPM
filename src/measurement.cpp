@@ -13,7 +13,7 @@
 #define ADCBUFFER       2048
 
 #define PPMNOISECUTOFF  22
-#define PPMNOISEOFFSET  22
+#define PPMNOISEOFFSET  20
 
 #define USEPPMFILTER    0
 #define PPMFILTERBUF    16
