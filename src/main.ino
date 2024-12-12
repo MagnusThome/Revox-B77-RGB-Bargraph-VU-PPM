@@ -60,9 +60,9 @@ void loop() {
     showmodenumber(programmode);
 #ifdef DEBUG
     //debugMeasurement();
-    Serial.printf("   %6.0f %6.0f %6.0f", level[AVG][L], level[RMS][L], level[PPM][L] );
-    Serial.printf("   %6.0f %6.0f %6.0f", level[AVG][R], level[RMS][R], level[PPM][R] );
-    //Serial.printf("    %2ld ms", (millis()-loopnow) );
+    Serial.printf("     %6.0f %6.0f %6.0f", level[AVG][L], level[RMS][L], level[PPM][L] );
+    Serial.printf("     %6.0f %6.0f %6.0f", level[AVG][R], level[RMS][R], level[PPM][R] );
+    //Serial.printf("      %2ld ms", (millis()-loopnow) );
     Serial.printf("\n0");
 #endif
   }

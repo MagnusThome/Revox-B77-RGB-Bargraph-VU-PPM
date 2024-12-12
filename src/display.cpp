@@ -11,7 +11,7 @@
 #define LEFT 0
 #define RGHT 1
 
-#define INZERODB     1100
+#define INZERODB     1020
 
 #define PPM_DOT_AND_VU_BAR 0
 #define VU_BAR             1
@@ -35,60 +35,57 @@ uint8_t colormode;
 int dimmer;
 int scrsvmode;
 
-#define CONST  1.42 
+
 float thresholdsrevox[NUMLEDS] = {  // manually set steps to compensate for the unlinear rectification in the Revox.
-                                    // From -40dB up to around -32dB the precision is pretty bad (which can also be seen in channel to channel diferences). 
-                                    // This is due to very small errors in finding the dc bias offsets that affects these low levels
-                                    // but also ADC noise. So these particular values are rough estimates
-0.9*CONST,    // -40dB  
-1.6*CONST,    // -38dB
-2.6*CONST,    // -36dB
-4.2*CONST,    // -34dB
-6.5*CONST,    // -32dB
-9.5*CONST,    // -30dB 
-13*CONST,     // -28dB
-19*CONST,     // -26dB
-26*CONST,     // -24dB
-47*CONST,     // -22dB
-63*CONST,     // -20dB
-68*CONST,     // -19dB
-77*CONST,     // -18dB
-89*CONST,     // -17dB
-102*CONST,    // -16dB
-117*CONST,    // -15dB
-135*CONST,    // -14dB
-155*CONST,    // -13dB
-176*CONST,    // -12dB
-199*CONST,    // -11dB
-226*CONST,    // -10dB
-258*CONST,    // -9dB
-292*CONST,    // -8dB
-332*CONST,    // -7dB
-375*CONST,    // -6dB
-422*CONST,    // -5dB
-476*CONST,    // -4dB
-538*CONST,    // -3dB
-609*CONST,    // -2dB
-687*CONST,    // -1dB
-775*CONST,    // 0dB
-875*CONST,    // +1dB
-986*CONST,    // +2dB
-1106*CONST,   // +3dB
-1242*CONST,   // +4dB
-1390*CONST    // +5dB
+0.0168*INZERODB,   // -30dB
+0.0196*INZERODB,   // -29dB
+0.0234*INZERODB,   // -28dB
+0.0271*INZERODB,   // -27dB
+0.0318*INZERODB,   // -26dB
+0.0365*INZERODB,   // -25dB
+0.0430*INZERODB,   // -24dB
+0.0496*INZERODB,   // -23dB
+0.0571*INZERODB,   // -22dB
+0.0664*INZERODB,   // -21dB
+0.0767*INZERODB,   // -20dB
+0.0889*INZERODB,   // -19dB
+0.1020*INZERODB,   // -18dB
+0.1169*INZERODB,   // -17dB
+0.1347*INZERODB,   // -16dB
+0.1534*INZERODB,   // -15dB
+0.1759*INZERODB,   // -14dB
+0.2002*INZERODB,   // -13dB
+0.2283*INZERODB,   // -12dB
+0.2591*INZERODB,   // -11dB
+0.2947*INZERODB,   // -10dB
+0.3340*INZERODB,   // -9dB
+0.3798*INZERODB,   // -8dB
+0.4294*INZERODB,   // -7dB
+0.4846*INZERODB,   // -6dB
+0.5454*INZERODB,   // -5dB
+0.6155*INZERODB,   // -4dB
+0.6950*INZERODB,   // -3dB
+0.7858*INZERODB,   // -2dB
+0.8859*INZERODB,   // -1dB
+1.0000*INZERODB,   // 0dB
+1.1272*INZERODB,   // +1dB
+1.2694*INZERODB,   // +2dB
+1.4284*INZERODB,   // +3dB
+1.6034*INZERODB,   // +4dB
+1.7961*INZERODB    // +5dB
 };
 
 float thresholds[NUMLEDS] = {    // true dB scale, can be used instead of the recalibrated above if you connect the inputs to somewhere in the clean audio chain and NOT the Revox's rectifier
-0.0100*INZERODB,    // -40dB
-0.0126*INZERODB,    // -38dB
-0.0158*INZERODB,    // -36dB
-0.0200*INZERODB,    // -34dB
-0.0251*INZERODB,    // -32dB
 0.0316*INZERODB,    // -30dB
+0.0355*INZERODB,    // -29dB
 0.0398*INZERODB,    // -28dB
+0.0447*INZERODB,    // -27dB
 0.0501*INZERODB,    // -26dB
+0.0526*INZERODB,    // -25dB
 0.0631*INZERODB,    // -24dB
+0.0708*INZERODB,    // -23dB
 0.0794*INZERODB,    // -22dB
+0.0891*INZERODB,    // -21dB
 0.1000*INZERODB,    // -20dB
 0.1122*INZERODB,    // -19dB
 0.1259*INZERODB,    // -18dB
@@ -134,25 +131,25 @@ void updateLeds(float vuL, float vuR, float ppmL, float ppmR) {
   FastLED.setBrightness(127+dimmer);
 
   ppmDotL = 0;
-  while (  ppmDotL<NUMLEDS  &&  ppmL>thresholds[ppmDotL] ) {
+  while (  ppmDotL<NUMLEDS  &&  ppmL>thresholdsrevox[ppmDotL] ) {
     ppmDotL++;
   }
   ppmDotL--;   // -1 (all off) and then 0 to 35
  
   ppmDotR = 0;
-  while (  ppmDotR<NUMLEDS  &&  ppmR>thresholds[ppmDotR] ) {
+  while (  ppmDotR<NUMLEDS  &&  ppmR>thresholdsrevox[ppmDotR] ) {
     ppmDotR++;
   }
   ppmDotR--;   // -1 (all off) and then 0 to 35
 
   vuDotL = 0;
-  while (  vuDotL<NUMLEDS  &&  vuL>thresholds[vuDotL] ) {
+  while (  vuDotL<NUMLEDS  &&  vuL>thresholdsrevox[vuDotL] ) {
     vuDotL++;
   }
   vuDotL--;   // -1 (all off) and then 0 to 35
  
   vuDotR = 0;
-  while (  vuDotR<NUMLEDS  &&  vuR>thresholds[vuDotR] ) {
+  while (  vuDotR<NUMLEDS  &&  vuR>thresholdsrevox[vuDotR] ) {
     vuDotR++;
   }
   vuDotR--;   // -1 (all off) and then 0 to 35

@@ -10,13 +10,13 @@
 #define OVRINPUTGPIO_R  3
 
 #define SAMPLERATE      48000
-#define ADCBUFFER       2048
+#define ADCBUFFER       4096
 
-#define PPMNOISECUTOFF  22
-#define PPMNOISEOFFSET  20
+#define PPMNOISECUTOFF  16
+#define PPMNOISEOFFSET  0
 
-#define USEPPMFILTER    0
-#define PPMFILTERBUF    16
+#define USEPPMFILTER    1
+#define PPMFILTERBUF    7
 
 #define INMAX           4095
 #define FULLSCALE       2047
