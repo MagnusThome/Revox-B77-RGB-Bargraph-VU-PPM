@@ -37,10 +37,11 @@ void setup() {
 
 void loop() {
   unsigned long loopnow = millis();
-  static unsigned long looptimer;
-  if (loopnow - looptimer >= 1000/UPDATEFREQ ) {  
-    looptimer = loopnow;
-    sampleAudio();
+  sampleAudio();
+  
+  static unsigned long displaytimer;
+  if (loopnow - displaytimer >= 1000/12 ) {  
+    displaytimer = loopnow;
     refreshAVG();
     refreshRMS();
     refreshPPM();
@@ -51,21 +52,24 @@ void loop() {
      }
     //if (detectOverdrive(L) || detectOverdrive(R)) { do something }
     //else { or something else }
-	
     if ( !screensaver(SCRSAVERAUTO, level[RMS][L]+level[RMS][R]) ) {
       updateLeds(level[RMS][L], level[RMS][R], level[PPM][L], level[PPM][R]);
     }
-	
     checkbutton();
     showmodenumber(programmode);
-#ifdef DEBUG
+  }
+
+  #ifdef DEBUG
+  static unsigned long printtimer;
+  if (loopnow - printtimer >= 1000/PRINTFREQ ) {  
+    printtimer = loopnow;
     //debugMeasurement();
     Serial.printf("     %6.0f %6.0f %6.0f", level[AVG][L], level[RMS][L], level[PPM][L] );
     Serial.printf("     %6.0f %6.0f %6.0f", level[AVG][R], level[RMS][R], level[PPM][R] );
     //Serial.printf("      %2ld ms", (millis()-loopnow) );
     Serial.printf("\n0");
-#endif
   }
+  #endif
 }
 
 

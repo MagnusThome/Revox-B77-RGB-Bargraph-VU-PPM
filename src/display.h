@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
+#define NUMLEDS 36
+
 #define SCRSAVERTIMEOUT 10 // minutes
 #define SCRSAVERAUTO 0
 #define SCRSAVERDEMO 1

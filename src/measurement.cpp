@@ -1,7 +1,6 @@
 #include "measurement.h"
 
 #include <ADCInput.h>
-#include "RunningMedian.h"
 
 
 #define INPUTGPIO_L     27
@@ -9,14 +8,13 @@
 #define OVRINPUTGPIO_L  2
 #define OVRINPUTGPIO_R  3
 
-#define SAMPLERATE      48000
-#define ADCBUFFER       4096
+#define DOWNSAMPLING    3
+#define SAMPLERATE      240000
+#define NUMBUFFERS      4 
+#define ADCBUFFER       2048
 
-#define PPMNOISECUTOFF  16
-#define PPMNOISEOFFSET  0
-
-#define USEPPMFILTER    1
-#define PPMFILTERBUF    7
+#define PPMNOISECUTOFF  0
+#define PPMNOISEOFFSET  5
 
 #define INMAX           4095
 #define FULLSCALE       2047
@@ -29,11 +27,12 @@
 
 ADCInput adc(INPUTGPIO_R,INPUTGPIO_L);
 
-RunningMedian ppmFiltL = RunningMedian(PPMFILTERBUF);
-RunningMedian ppmFiltR = RunningMedian(PPMFILTERBUF);
-
-int adcIn[NUMCHANNELS];
 int dcBias[NUMCHANNELS];
+int adcIn[NUMCHANNELS];
+
+int64_t osamSum[NUMCHANNELS] = {0,0};
+int osamCntr = 0;
+float osam[NUMCHANNELS];
 
 int64_t avgSum[NUMCHANNELS] = {0,0};
 int avgCntr = 0;
@@ -46,7 +45,9 @@ float rms[NUMCHANNELS];
 int maxVal[NUMCHANNELS] = {0,0};
 float peak[NUMCHANNELS];
 
+int overSampleRate = 0;
 int actualSampleRate = 0;
+int loopRate = 0;
 
 
 
@@ -55,10 +56,8 @@ int actualSampleRate = 0;
 
 
 void startadc(void) {
-  ppmFiltL.clear();
-  ppmFiltR.clear();
   adc.setFrequency(SAMPLERATE);
-  adc.setBuffers(4, ADCBUFFER);
+  adc.setBuffers(NUMBUFFERS, ADCBUFFER);
   adc.begin(); 
 }
 
@@ -69,34 +68,43 @@ void stopadc(void) {
 
 
 void sampleAudio(void) {
-  actualSampleRate = 0;
-  while (adc.available() && actualSampleRate < SAMPLERATE/UPDATEFREQ) {
-    adcIn[L] = adc.read();
-    adcIn[R] = adc.read();
-    int left = constrain(abs(adcIn[L]-dcBias[L]), 0, FULLSCALE);
-    int rght = constrain(abs(adcIn[R]-dcBias[R]), 0, FULLSCALE);
 
-    avgSum[L] += (int64_t)left;
-    avgSum[R] += (int64_t)rght;
-    avgCntr++;
-
-    rmsSum[L] += (int64_t)(left*left);
-    rmsSum[R] += (int64_t)(rght*rght);
-    rmsCntr++;
-
-    if (left>maxVal[L]) {
-      if (left<PPMNOISECUTOFF) { left=0; }  // Noise gate for ADC noise floor
-      ppmFiltL.add(left);
-      maxVal[L] = left;
-    }
-    if (rght>maxVal[R]) {
-      if (rght<PPMNOISECUTOFF) { rght=0; }  // Noise gate for ADC noise floor
-      ppmFiltR.add(rght);
-      maxVal[R] = rght;
-    }
-    actualSampleRate++;
+  if (adc.available()>=2) {
+    while (adc.available()>=2) {
+      osamSum[L] += adc.read(); 
+      osamSum[R] += adc.read();
+      osamCntr++;
+      overSampleRate++;
+      if(osamCntr>=DOWNSAMPLING) {
+        adcIn[L] = abs((osamSum[L]/osamCntr)-dcBias[L]);
+        adcIn[R] = abs((osamSum[R]/osamCntr)-dcBias[R]);
+        osamSum[L] = 0;
+        osamSum[R] = 0;
+        osamCntr = 0;
+        actualSampleRate++;
+  
+        avgSum[L] += (int64_t)adcIn[L];
+        avgSum[R] += (int64_t)adcIn[R];
+        avgCntr++;
+    
+        rmsSum[L] += (int64_t)(adcIn[L]*adcIn[L]);
+        rmsSum[R] += (int64_t)(adcIn[R]*adcIn[R]);
+        rmsCntr++;
+    
+        if (adcIn[L]>maxVal[L]) {
+          if (adcIn[L]<PPMNOISECUTOFF) { adcIn[L]=0; }  // Noise gate for ADC noise floor
+          maxVal[L] = adcIn[L];
+        }
+        if (adcIn[R]>maxVal[R]) {
+          if (adcIn[R]<PPMNOISECUTOFF) { adcIn[R]=0; }  // Noise gate for ADC noise floor
+          maxVal[R] = adcIn[R];
+        }
+      }
+    }    
+    loopRate++;
   }
 }
+
 
 
 // AVG is 2*val/pi (0.6366) and RMS is val/sqr of 2 (0.7071). 
@@ -121,16 +129,8 @@ void refreshRMS(void) {
 
 
 void refreshPPM(void) {
-  if(USEPPMFILTER) {
-    peak[L] = constrain(ppmFiltL.getMedian()-PPMNOISEOFFSET, 0, FULLSCALE);
-    peak[R] = constrain(ppmFiltR.getMedian()-PPMNOISEOFFSET, 0, FULLSCALE);
-    ppmFiltL.clear();
-    ppmFiltR.clear();
-  }
-  else {
-    peak[L] = maxVal[L]-PPMNOISEOFFSET;
-    peak[R] = maxVal[R]-PPMNOISEOFFSET;
-  }
+  peak[L] = maxVal[L]-PPMNOISEOFFSET;
+  peak[R] = maxVal[R]-PPMNOISEOFFSET;
   maxVal[L] = 0;
   maxVal[R] = 0;
 }
@@ -199,11 +199,16 @@ void findDcBias(uint8_t flushruns) {
 
 
 void debugMeasurement(void) {
-  Serial.printf("    offset: %3d %3d", dcBias[L]-(INMAX/2), dcBias[R]-(INMAX/2) );
-  Serial.printf("    adc: %5d %5d", adcIn[L]-dcBias[L], adcIn[R]-dcBias[R] ); // just random single samples
-  Serial.printf("    left: %6.0f %6.0f %6.0f", avg[L], rms[L], peak[L] );
-  Serial.printf("    right: %6.0f %6.0f %6.0f", avg[R], rms[R], peak[R] );
-  Serial.printf("    %5.1f kHz   ", (float)actualSampleRate*UPDATEFREQ/1000 );
+  //Serial.printf("    offset: %3d %3d", dcBias[L]-(INMAX/2), dcBias[R]-(INMAX/2) );
+  //Serial.printf("    adc: %5d %5d", adcIn[L], adcIn[R] ); // just random single samples
+  Serial.printf("        %6.0f %6.0f %6.0f", avg[L], rms[L], peak[L] );
+  Serial.printf("        %6.0f %6.0f %6.0f", avg[R], rms[R], peak[R] );
+  Serial.printf("    %5.3f kHz   ", (float)overSampleRate*PRINTFREQ/1000 );
+  Serial.printf("    %5.3f kHz   ", (float)actualSampleRate*PRINTFREQ/1000 );
+  Serial.printf("    %5.3f kHz   ", (float)loopRate*PRINTFREQ/1000 );
+  overSampleRate = 0;
+  actualSampleRate = 0;
+  loopRate = 0;
 }
 
 

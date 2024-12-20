@@ -4,8 +4,8 @@
 #include <Arduino.h>
 
 
-#define UPDATEFREQ   12
-#define NUMCHANNELS  2
+#define PRINTFREQ     12
+#define NUMCHANNELS   2
 
 void startadc(void);
 void stopadc(void);
